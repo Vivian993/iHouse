@@ -53,6 +53,7 @@ body{
   display:flex; align-items:center; justify-content:space-between;
   padding:18px 18px 10px;
 }
+.home-topbar{ justify-content:center; text-align:center; padding-top:22px; }
 .topbar h1{
   font-size:25px; margin:0; font-weight:700; letter-spacing:.5px;
 }
@@ -74,7 +75,6 @@ body{
   box-shadow:var(--shadow);
   padding:22px 20px 20px;
   margin:6px 0 16px;
-  overflow:hidden;
 }
 .hero::before{
   content:"";
@@ -192,13 +192,15 @@ body{
 
 /* ---------- 六十甲子籤 ---------- */
 .qian-mini{
-  margin-top:16px; display:flex; align-items:center; gap:12px; background:linear-gradient(160deg,#F3E3DE,var(--paper));
-  border:1.5px solid rgba(182,96,79,0.3); border-radius:18px; padding:12px 14px; box-shadow:var(--shadow-sm);
+  margin-top:16px; display:flex; align-items:center; gap:14px;
+  background:linear-gradient(155deg,#FBE4D8 0%,#F6D6C6 55%,#F0C9BB 100%);
+  border:2px solid rgba(182,96,79,0.35); border-radius:20px; padding:14px 16px;
+  box-shadow:0 6px 16px rgba(182,96,79,0.18), inset 0 1px 0 rgba(255,255,255,0.5);
 }
-.qian-mini-tube{width:44px; height:44px; display:flex; align-items:center; justify-content:center;}
-.qian-mini-tube img{width:100%; height:100%; object-fit:contain;}
-.qian-mini-title{font-family:'ZCOOL KuaiLe',cursive; font-size:16px; color:var(--red);}
-.qian-mini-sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+.qian-mini-tube{width:66px; height:66px; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+.qian-mini-tube img{width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 3px 4px rgba(120,50,30,0.25));}
+.qian-mini-title{font-family:'ZCOOL KuaiLe',cursive; font-size:19px; color:var(--red);}
+.qian-mini-sub{font-size:13.5px; color:var(--ink-soft); margin-top:3px;}
 .qian-modal-box{text-align:center;}
 .qian-tube-wrap{display:flex; justify-content:center; margin-top:6px;}
 .qian-tube-big{height:170px; width:auto; cursor:pointer; transition:transform .15s; display:block; margin:0 auto; animation:tubeEnter .5s ease-out;}
@@ -214,6 +216,7 @@ body{
 }
 .qian-hint{font-size:13.5px; color:var(--ink-soft); margin-top:12px;}
 .qian-drawn-num{font-family:'ZCOOL KuaiLe',cursive; font-size:24px; color:var(--red); margin-top:6px;}
+.jiao2-wrap{ transform: scaleX(-1); display:flex; align-items:flex-end; }
 .jiao-pair{display:flex; gap:26px; justify-content:center; align-items:flex-end; margin:20px 0 8px;}
 .jiao-block{
   height:80px; width:auto; filter:drop-shadow(0 3px 4px rgba(75,64,56,0.25)); transition:transform .2s;
@@ -243,18 +246,19 @@ body{
 
 /* ---------- calculator ---------- */
 .calc-display{
-  background:var(--ink); color:#fff; border-radius:20px; padding:26px 20px; text-align:right;
-  font-size:40px; font-weight:700; margin-bottom:14px; word-break:break-all; box-shadow:var(--shadow);
+  background:linear-gradient(160deg,#F7D9DD,#F0C3CA); color:var(--ink); border-radius:20px; padding:28px 22px; text-align:right;
+  font-size:48px; font-weight:700; margin-bottom:14px; word-break:break-all; box-shadow:var(--shadow);
 }
-.calc-display .expr{font-size:14px; color:#c9c2d6; min-height:18px;}
+.calc-display .expr{font-size:16px; color:var(--pink-deep); min-height:20px;}
 .calc-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
 .calc-btn{
-  border:none; border-radius:16px; padding:18px 0; font-size:19px; font-weight:700; background:#fff;
+  border:none; border-radius:16px; padding:20px 0; font-size:23px; font-weight:700; background:#fff;
   box-shadow:var(--shadow-sm); color:var(--ink);
 }
 .calc-btn.op{background:var(--pink); color:#fff;}
 .calc-btn.fn{background:var(--cream); color:var(--pink-deep);}
 .calc-btn.eq{background:var(--mint-deep); color:#fff;}
+
 
 /* ---------- more / portals ---------- */
 .tape-label{
@@ -327,12 +331,18 @@ body{
 .bottom-nav{
   position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto;
   background:var(--paper); box-shadow:0 -4px 18px rgba(74,63,85,0.10);
-  display:flex; justify-content:space-around; padding:10px 4px 14px; border-radius:22px 22px 0 0;
+  display:flex; justify-content:space-around; padding:16px 8px 20px; border-radius:22px 22px 0 0;
 }
-.nav-btn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--ink-soft); font-family:inherit;}
+.nav-btn-wrap{position:relative; flex:1; display:flex; justify-content:center;}
+.nav-btn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--ink-soft); font-family:inherit; padding:4px 6px;}
 .nav-btn.active{color:var(--pink-deep);}
-.nav-btn .ic{font-size:20px;}
-.nav-btn span{font-size:10.5px;}
+.nav-btn .ic{font-size:24px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden; background-size:cover; background-position:center;}
+.nav-btn span{font-size:12px;}
+.nav-edit-btn{
+  position:absolute; top:-4px; right:8px; width:18px; height:18px; border-radius:50%;
+  background:#fff; border:1px solid var(--line); font-size:9.5px; color:var(--ink-soft);
+  display:flex; align-items:center; justify-content:center; padding:0; box-shadow:var(--shadow-sm);
+}
 
 .section-title{font-size:16px; font-weight:700; margin:14px 0 10px;}
 ::-webkit-scrollbar{display:none;}
@@ -343,9 +353,9 @@ body{
 
   <!-- ================= 首頁 ================= -->
   <section class="screen active" id="screen-home">
-    <div class="topbar">
+    <div class="topbar home-topbar">
       <div>
-        <h1 class="title-font">🏠 我的數位小屋</h1>
+        <h1 class="title-font">我的數位小屋</h1>
         <div class="sub" id="home-greet">今天也要開心一天 ✨</div>
       </div>
     </div>
@@ -437,7 +447,7 @@ body{
         <div class="qian-hint">想好要問的事了嗎？擲筊請示是否為這支籤</div>
         <div class="jiao-pair">
           <img class="jiao-block" id="jiao1" alt="">
-          <img class="jiao-block" id="jiao2" alt="">
+          <div class="jiao2-wrap"><img class="jiao-block" id="jiao2" alt=""></div>
         </div>
         <div class="jiao-result" id="jiao-result">&nbsp;</div>
         <button class="draw-card-btn" id="jiao-btn" onclick="throwJiao()">🙏 擲筊確認</button>
@@ -600,10 +610,10 @@ body{
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-btn" data-nav="home" onclick="go('home')"><span class="ic">🏠</span><span>首頁</span></button>
-  <button class="nav-btn" data-nav="calendar" onclick="go('calendar')"><span class="ic">📅</span><span>月曆</span></button>
-  <button class="nav-btn" data-nav="calculator" onclick="go('calculator')"><span class="ic">🧮</span><span>計算機</span></button>
-  <button class="nav-btn" data-nav="portal" onclick="openPortal('fav')"><span class="ic">⭐</span><span>更多</span></button>
+  <div class="nav-btn-wrap"><button class="nav-btn" data-nav="home" onclick="go('home')"><span class="ic" id="navicon-home">🏠</span><span>首頁</span></button><button class="nav-edit-btn" onclick="event.stopPropagation();openHomeIconPicker('nav_home')">✎</button></div>
+  <div class="nav-btn-wrap"><button class="nav-btn" data-nav="calendar" onclick="go('calendar')"><span class="ic" id="navicon-calendar">📅</span><span>月曆</span></button><button class="nav-edit-btn" onclick="event.stopPropagation();openHomeIconPicker('nav_calendar')">✎</button></div>
+  <div class="nav-btn-wrap"><button class="nav-btn" data-nav="calculator" onclick="go('calculator')"><span class="ic" id="navicon-calculator">🧮</span><span>計算機</span></button><button class="nav-edit-btn" onclick="event.stopPropagation();openHomeIconPicker('nav_calculator')">✎</button></div>
+  <div class="nav-btn-wrap"><button class="nav-btn" data-nav="portal" onclick="openPortal('fav')"><span class="ic" id="navicon-more">⭐</span><span>更多</span></button><button class="nav-edit-btn" onclick="event.stopPropagation();openHomeIconPicker('nav_more')">✎</button></div>
 </div>
 
 <script>
@@ -1309,7 +1319,8 @@ async function handleHomeIconSelect(e){
   e.target.value='';
 }
 function applyHomeIconImage(key,dataUrl){
-  const el=document.getElementById('homeicon-'+key);
+  const elId = key.startsWith('nav_') ? 'navicon-'+key.slice(4) : 'homeicon-'+key;
+  const el=document.getElementById(elId);
   if(!el) return;
   el.style.backgroundImage=`url(${dataUrl})`;
   el.style.backgroundSize='cover';
@@ -1317,7 +1328,8 @@ function applyHomeIconImage(key,dataUrl){
   el.textContent='';
 }
 async function loadHomeIconImages(){
-  const keys=['cal','calc','kids','me','life','fav','phone','almanac','alltodos'];
+  const keys=['cal','calc','kids','me','life','fav','phone','almanac','alltodos',
+              'nav_home','nav_calendar','nav_calculator','nav_more'];
   for(const k of keys){
     const dataUrl=await storeGet('homeicon:'+k);
     if(dataUrl) applyHomeIconImage(k, dataUrl);
