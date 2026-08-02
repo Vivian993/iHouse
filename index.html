@@ -452,7 +452,7 @@ body{
   display:flex; justify-content:center; gap:60px; padding:16px 8px 20px; border-radius:22px 22px 0 0;
 }
 .nav-btn-wrap{position:relative; flex:1; display:flex; justify-content:center;}
-.nav-btn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--ink-soft); font-family:inherit; padding:4px 6px;}
+.nav-btn{background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--ink-soft); font-family:inherit; padding:4px 6px; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; touch-action:manipulation;}
 .nav-btn.active{color:var(--pink-deep);}
 .nav-btn .ic{font-size:24px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:10px; overflow:hidden; background-size:cover; background-position:center;}
 .nav-btn span{font-size:12px;}
@@ -569,7 +569,7 @@ body{
   <div class="side-item-wrap"><button class="side-item" data-side="portal-fav" data-icon-key="fav" onclick="openPortal('fav')"><span class="ic ic-fav" id="sideicon-fav">⭐</span><span>收藏</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="portal-phone" data-icon-key="phone" onclick="openPortal('phone')"><span class="ic ic-phone" id="sideicon-phone">📞</span><span>電話簿</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="alltodos" data-icon-key="alltodos" onclick="go('alltodos')"><span class="ic ic-alltodos" id="sideicon-alltodos">📔</span><span>待辦總覽</span></button></div>
-  <div class="side-item-wrap"><button class="side-item" data-side="dict" onclick="go('dict')"><span class="ic ic-dict">📖</span><span>成語字典</span></button></div>
+  <div class="side-item-wrap"><button class="side-item" data-side="dict" data-icon-key="dict" onclick="go('dict')"><span class="ic ic-dict" id="sideicon-dict">📖</span><span>成語字典</span></button></div>
 </nav>
 
 <div id="app">
@@ -822,11 +822,16 @@ body{
         <input type="text" id="dictFilterKeyword" oninput="dictRenderLibrary()" placeholder="🔍 搜尋收藏（成語、生字、意思、課名都可以打）">
       </div>
       <div class="dict-form-row two">
+        <select id="dictFilterLesson" onchange="dictRenderLibrary()">
+          <option value="">全部課次</option>
+        </select>
         <select id="dictFilterGrade" onchange="dictRenderLibrary()">
           <option value="">全部年級</option>
           <option>一年級</option><option>二年級</option><option>三年級</option>
           <option>四年級</option><option>五年級</option><option>六年級</option>
         </select>
+      </div>
+      <div class="dict-form-row two">
         <select id="dictFilterType" onchange="dictRenderLibrary()">
           <option value="">全部類型</option>
           <option value="idiom">只看成語</option>
@@ -955,8 +960,8 @@ body{
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-btn" data-nav="home" onclick="go('home')"><span class="ic" id="navicon-home">🏠</span><span>首頁</span></button>
-  <button class="nav-btn" onclick="toggleCalcPopover()"><span class="ic" id="navicon-calculator">🧮</span><span>計算機</span></button>
+  <button class="nav-btn" data-nav="home" data-icon-key="navhome" onclick="go('home')"><span class="ic" id="navicon-home">🏠</span><span>首頁</span></button>
+  <button class="nav-btn" data-icon-key="navcalc" onclick="toggleCalcPopover()"><span class="ic" id="navicon-calculator">🧮</span><span>計算機</span></button>
 </div>
 
 <script>
@@ -1859,15 +1864,17 @@ async function renderHome(){
 /* ---------------- 快速入口自訂圖片 ---------------- */
 let homeIconEditingKey=null;
 const HOME_ICON_DEFAULTS={
-  cal:'📅', kids:'👦', me:'👩', life:'🌐', fav:'⭐', phone:'📞', alltodos:'📔'
+  cal:'📅', kids:'👦', me:'👩', life:'🌐', fav:'⭐', phone:'📞', alltodos:'📔', dict:'📖',
+  navhome:'🏠', navcalc:'🧮'
 };
+const HOME_ICON_ELID={ navhome:'navicon-home', navcalc:'navicon-calculator' };
 async function openHomeIconPicker(key){
   const existing=await storeGet('homeicon:'+key);
   if(existing){
     const wantRemove=await showConfirm('要移除目前設定的照片嗎？','移除照片','改選新照片');
     if(wantRemove){
       localStorage.removeItem(STORE_PREFIX+'homeicon:'+key);
-      const el=document.getElementById('sideicon-'+key);
+      const el=document.getElementById(HOME_ICON_ELID[key] || ('sideicon-'+key));
       if(el){ el.style.backgroundImage='none'; el.textContent=HOME_ICON_DEFAULTS[key]||'🙂'; }
       return;
     }
@@ -1884,7 +1891,7 @@ async function handleHomeIconSelect(e){
   e.target.value='';
 }
 function applyHomeIconImage(key,dataUrl){
-  const el=document.getElementById('sideicon-'+key);
+  const el=document.getElementById(HOME_ICON_ELID[key] || ('sideicon-'+key));
   if(!el) return;
   el.style.backgroundImage=`url(${dataUrl})`;
   el.style.backgroundSize='cover';
@@ -1892,14 +1899,14 @@ function applyHomeIconImage(key,dataUrl){
   el.textContent='';
 }
 async function loadHomeIconImages(){
-  const keys=['cal','kids','me','life','fav','phone','alltodos'];
+  const keys=['cal','kids','me','life','fav','phone','alltodos','dict','navhome','navcalc'];
   for(const k of keys){
     const dataUrl=await storeGet('homeicon:'+k);
     if(dataUrl) applyHomeIconImage(k, dataUrl);
   }
 }
 function setupSideItemLongPress(){
-  document.querySelectorAll('.side-item[data-icon-key]').forEach(btn=>{
+  document.querySelectorAll('.side-item[data-icon-key], .nav-btn[data-icon-key]').forEach(btn=>{
     const key=btn.getAttribute('data-icon-key');
     let timer=null, longPressReady=false;
     const start=()=>{
@@ -2434,12 +2441,22 @@ async function dictToggleCollect(record, btnEl){
 async function dictRenderLibrary(){
   const container=document.getElementById('dictLibrary');
   const lib=(await storeGet('dict:library'))||[];
+
+  // 動態填入課名選單（保留目前選取的值）
+  const lessonSelect=document.getElementById('dictFilterLesson');
+  const currentLessonVal=lessonSelect.value;
+  const lessons=[...new Set(lib.map(it=>it.lesson).filter(Boolean))].sort();
+  lessonSelect.innerHTML='<option value="">全部課次</option>'+lessons.map(l=>`<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('');
+  if(lessons.includes(currentLessonVal)) lessonSelect.value=currentLessonVal;
+
   const fg=document.getElementById('dictFilterGrade').value;
   const ft=document.getElementById('dictFilterType').value;
+  const fl=lessonSelect.value;
   const fk=document.getElementById('dictFilterKeyword').value.trim();
   let filtered=lib.map((it,idx)=>({...it, _idx:idx}));
   if(fg) filtered=filtered.filter(it=>it.grade===fg);
   if(ft) filtered=filtered.filter(it=>it.type===ft);
+  if(fl) filtered=filtered.filter(it=>it.lesson===fl);
   if(fk){
     filtered=filtered.filter(it=>{
       const haystack=[it.idiom,it.char,it.pinyin,it.meaning,it.sentence,it.sentence1,it.sentence2,it.lesson,(it.words||[]).join('、')]
