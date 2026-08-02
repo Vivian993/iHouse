@@ -46,8 +46,14 @@ body{
 }
 .title-font{font-family:'ZCOOL KuaiLe',cursive; color:var(--header); font-size:23px; letter-spacing:.5px; text-shadow:0 1px 0 rgba(255,255,255,0.6);}
 .app-shell{ display:flex; }
+#global-clock-bar{
+  position:fixed; top:0; left:0; right:0; height:30px; z-index:48;
+  background:linear-gradient(90deg,var(--pink-deep),var(--blue-deep));
+  color:#fff; font-size:12.5px; font-weight:700; letter-spacing:.02em;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
 .sidebar{
-  position:fixed; left:0; top:0; bottom:0; width:76px;
+  position:fixed; left:0; top:30px; bottom:0; width:76px;
   background:var(--paper); box-shadow:2px 0 14px rgba(90,74,76,0.10);
   display:flex; flex-direction:column; align-items:center;
   padding:16px 0 90px; gap:8px; overflow-y:auto; z-index:45;
@@ -72,7 +78,6 @@ body{
   display:flex; align-items:center; justify-content:center; color:var(--ink); flex:0 0 auto;
 }
 .topbar-title-group{display:flex; align-items:center; gap:8px; min-width:0;}
-.topbar-title-group h1{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .calc-fab{
   position:fixed; top:16px; right:16px; z-index:55; width:46px; height:46px; border-radius:16px;
   border:none; background:linear-gradient(160deg,#F7D9DD,#F0C3CA); box-shadow:var(--shadow);
@@ -82,7 +87,7 @@ body{
 #calc-popover-mask{ align-items:center; }
 #app{
   max-width:480px;
-  margin:0 auto 0 76px;
+  margin:30px auto 0 76px;
   min-height:100vh;
   position:relative;
   padding-bottom:82px;
@@ -460,9 +465,9 @@ body{
 .section-title{font-size:16px; font-weight:700; margin:14px 0 10px;}
 
 /* ---------- 成語字典 ---------- */
-.dict-tabs{display:flex; gap:10px; margin:14px 0 10px; position:sticky; top:0; background:var(--cream); padding-top:6px; z-index:16;}
+.dict-tabs{display:flex; gap:10px; margin:14px 0 10px; position:sticky; top:30px; background:var(--cream); padding-top:6px; z-index:16;}
 .dict-sticky-bar{
-  display:flex; gap:8px; position:sticky; top:52px; z-index:15; background:var(--cream);
+  display:flex; gap:8px; position:sticky; top:82px; z-index:15; background:var(--cream);
   padding:6px 0 12px;
 }
 .dict-sticky-bar input{
@@ -494,6 +499,29 @@ body{
 .dict-loading{display:flex; flex-direction:column; align-items:center; gap:10px; padding:30px 0; color:var(--ink-soft); font-size:14px;}
 .dict-spinner{width:34px; height:34px; border-radius:50%; border:4px solid var(--line); border-top-color:var(--pink-deep); animation:dictSpin .8s linear infinite;}
 @keyframes dictSpin{ to{ transform:rotate(360deg); } }
+.dict-mode-toggle{display:flex; gap:8px; margin:6px 0 12px;}
+.dict-mode-btn{
+  flex:1; border:1.5px solid var(--line); border-radius:12px; padding:9px 4px; font-size:13px; font-weight:700;
+  background:#fff; color:var(--ink-soft); font-family:inherit;
+}
+.dict-mode-btn.active{background:var(--pink-deep); color:#fff; border-color:var(--pink-deep);}
+.dict-collect-btn{
+  border:none; background:var(--mint-deep); color:#fff; font-size:12.5px; font-weight:700; padding:8px 14px;
+  border-radius:12px; flex:0 0 auto; white-space:nowrap;
+}
+.dict-collect-btn.collected{background:var(--line); color:var(--ink-soft);}
+.dict-char-card{
+  background:#fff; border-radius:16px; box-shadow:var(--shadow-sm); padding:14px; margin-bottom:10px;
+  display:flex; gap:12px; align-items:flex-start;
+}
+.dict-char-card .dcc-char{
+  width:44px; height:44px; border-radius:12px; background:var(--cream); flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:var(--pink-deep);
+}
+.dict-char-card .dcc-body{flex:1; min-width:0;}
+.dict-char-card .dcc-bopomofo{font-size:12.5px; color:var(--ink-soft);}
+.dict-char-card .dcc-meaning{font-size:13.5px; line-height:1.6; margin-top:4px;}
+.dict-char-card .dcc-not-found{font-size:13px; color:var(--ink-soft); font-style:italic;}
 .dict-result-card{background:#fff; border-radius:20px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:14px;}
 .dict-result-head{
   background:linear-gradient(160deg,#F7D9DD,#F0C3CA); padding:18px 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
@@ -531,6 +559,7 @@ body{
 </style>
 </head>
 <body>
+<div id="global-clock-bar">📅 <span id="global-clock-text"></span></div>
 <div class="app-shell">
 <nav class="sidebar" id="sidebar">
   <div class="side-item-wrap"><button class="side-item" data-side="calendar" data-icon-key="cal" onclick="go('calendar')"><span class="ic ic-cal" id="sideicon-cal">📅</span><span>月曆</span></button></div>
@@ -747,111 +776,41 @@ body{
       <h1 class="title-font">📖 成語字典</h1>
       <div style="width:38px;"></div>
     </div>
-    <div class="tape-label">輸入成語或單字查詢，資料來源：教育部《國語辭典》（創用CC授權）</div>
+    <div class="tape-label">輸入文字查詢，資料來源：教育部《國語辭典》（創用CC授權）</div>
 
-    <div class="dict-tabs">
-      <button class="dict-tab active" id="dictTabIdiom" onclick="dictSwitchTab('idiom')">🔍 成語查詢</button>
-      <button class="dict-tab" id="dictTabVocab" onclick="dictSwitchTab('vocab')">📖 生字查詢</button>
+    <div class="dict-mode-toggle">
+      <button class="dict-mode-btn active" id="dictModeWord" onclick="dictSetMode('word')">📖 詞語／成語</button>
+      <button class="dict-mode-btn" id="dictModeChar" onclick="dictSetMode('char')">🔤 生字批次查詢</button>
     </div>
 
-    <!-- 成語面板 -->
-    <div id="dictPanelIdiom">
-      <div class="dict-sticky-bar">
-        <input type="text" id="dictIdiomInput" placeholder="輸入成語，例如：守株待兔">
-        <button class="dict-sticky-btn" id="dictMoeIdiomBtn" onclick="dictLookupIdiomFree()">🔍 查詢</button>
-      </div>
-      <div class="dict-card">
-        <div class="dict-form-row two">
-          <select id="dictIdiomGrade">
-            <option>一年級</option><option>二年級</option><option>三年級</option>
-            <option>四年級</option><option selected>五年級</option><option>六年級</option>
-          </select>
-          <input type="text" id="dictIdiomLesson" placeholder="課名（選填，例：第1課）">
-        </div>
-        <div class="dict-quick-row">
-          <span>快速試試：</span>
-          <button class="dict-chip-btn" onclick="dictQuickIdiom('守株待兔')">守株待兔</button>
-          <button class="dict-chip-btn" onclick="dictQuickIdiom('畫龍點睛')">畫龍點睛</button>
-          <button class="dict-chip-btn" onclick="dictQuickIdiom('掩耳盜鈴')">掩耳盜鈴</button>
-        </div>
-      </div>
-      <div class="dict-card" id="dict-manual-idiom-box" style="margin-top:12px;">
-        <div class="dict-section-label" style="margin-top:0;">📝 查完了嗎？把重點記下來</div>
-        <textarea id="dictIdiomManualNote" placeholder="從教育部字典看到的意思、造句，簡單記幾句…" style="width:100%; min-height:70px; border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:15px; font-family:inherit;"></textarea>
-        <button class="dict-submit-btn" style="margin-top:10px;" onclick="dictSaveManualIdiom()">📥 收藏這筆</button>
-      </div>
+    <div class="dict-sticky-bar">
+      <input type="text" id="dictInput" placeholder="輸入成語或詞語，例如：守株待兔">
+      <button class="dict-sticky-btn" onclick="dictLookup()">🔍 查詢</button>
+    </div>
+    <div class="grid-hint" id="dictModeHint" style="text-align:left; margin:-6px 0 10px;">查一個完整的詞語或成語</div>
 
-      <div id="dictIdiomLoading" class="dict-loading hidden">
-        <div class="dict-spinner"></div>
-        <div>查詢中，請稍等一下…</div>
+    <div class="dict-card">
+      <div class="dict-form-row two">
+        <select id="dictGrade">
+          <option>一年級</option><option>二年級</option><option>三年級</option>
+          <option>四年級</option><option selected>五年級</option><option>六年級</option>
+        </select>
+        <input type="text" id="dictLesson" placeholder="課名（選填，收藏時會套用）">
       </div>
-
-      <div id="dictIdiomResult" class="dict-result-card hidden">
-        <div class="dict-result-head">
-          <div>
-            <div class="dict-result-meta" id="dictIdiomMeta"></div>
-            <div class="dict-result-title" id="dictIdiomTitle"></div>
-            <div class="dict-result-pinyin" id="dictIdiomPinyin"></div>
-          </div>
-          <button class="dict-save-btn" onclick="dictSaveIdiom()">📥 收藏</button>
-        </div>
-        <div class="dict-result-body">
-          <div class="dict-section-label">字面拆解（點字可查字典）</div>
-          <div class="dict-breakdown" id="dictBreakdown"></div>
-          <div class="dict-section-label">情境解析</div>
-          <div class="dict-comic" id="dictComic"></div>
-          <div class="dict-section-label">造句</div>
-          <div class="dict-sentence" id="dictIdiomSentence"></div>
-        </div>
+      <div class="dict-quick-row" id="dictQuickRow">
+        <span>快速試試：</span>
+        <button class="dict-chip-btn" onclick="dictQuickFill('守株待兔')">守株待兔</button>
+        <button class="dict-chip-btn" onclick="dictQuickFill('畫龍點睛')">畫龍點睛</button>
+        <button class="dict-chip-btn" onclick="dictQuickFill('掩耳盜鈴')">掩耳盜鈴</button>
       </div>
     </div>
 
-    <!-- 生字面板 -->
-    <div id="dictPanelVocab" class="hidden">
-      <div class="dict-sticky-bar">
-        <input type="text" id="dictVocabInput" placeholder="輸入一個單字，例如：毫" maxlength="1">
-        <button class="dict-sticky-btn" id="dictMoeVocabBtn" onclick="dictLookupVocabFree()">🔍 查詢</button>
-      </div>
-      <div class="dict-card">
-        <div class="dict-form-row two">
-          <select id="dictVocabGrade">
-            <option>一年級</option><option>二年級</option><option>三年級</option>
-            <option>四年級</option><option selected>五年級</option><option>六年級</option>
-          </select>
-          <input type="text" id="dictVocabLesson" placeholder="課名（選填）">
-        </div>
-      </div>
-      <div class="dict-card" id="dict-manual-vocab-box" style="margin-top:12px;">
-        <div class="dict-section-label" style="margin-top:0;">📝 查完了嗎？把重點記下來</div>
-        <textarea id="dictVocabManualNote" placeholder="從教育部字典看到的意思、語詞、造句，簡單記幾句…" style="width:100%; min-height:70px; border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:15px; font-family:inherit;"></textarea>
-        <button class="dict-submit-btn" style="margin-top:10px;" onclick="dictSaveManualVocab()">💾 收藏這筆</button>
-      </div>
-
-      <div id="dictVocabLoading" class="dict-loading hidden">
-        <div class="dict-spinner"></div>
-        <div>查詢中，請稍等一下…</div>
-      </div>
-
-      <div id="dictVocabResult" class="dict-result-card hidden">
-        <div class="dict-result-head">
-          <div style="display:flex;align-items:center;gap:14px;">
-            <div class="dict-char-box" id="dictVChar">字</div>
-            <div>
-              <div class="dict-result-meta" id="dictVMeta"></div>
-              <div class="dict-result-pinyin" id="dictVPinyin" style="font-size:16px;"></div>
-            </div>
-          </div>
-          <button class="dict-save-btn" onclick="dictSaveVocab()">💾 收藏</button>
-        </div>
-        <div class="dict-result-body">
-          <div class="dict-section-label">常用語詞</div>
-          <div class="dict-words" id="dictVWords"></div>
-          <div class="dict-section-label">造句示範</div>
-          <div class="dict-sentence" id="dictVSent1"></div>
-          <div class="dict-sentence" id="dictVSent2"></div>
-        </div>
-      </div>
+    <div id="dictLoading" class="dict-loading hidden">
+      <div class="dict-spinner"></div>
+      <div>查詢中，請稍等一下…</div>
     </div>
+
+    <div id="dictResults"></div>
 
     <!-- 收藏庫 -->
     <div class="dict-card" style="margin-top:20px;">
@@ -900,7 +859,7 @@ body{
     <div class="dict-sentence" id="dictModalMeaning"></div>
     <div class="dict-section-label">常用造詞</div>
     <div class="dict-words" id="dictModalWords"></div>
-    <button class="dict-submit-btn" style="margin-top:16px;" onclick="dictSaveModalChar()">💾 將此字加入生字收藏</button>
+    <button class="dict-collect-btn" id="dictModalCollectBtn" style="margin-top:16px; width:100%; padding:12px 0;" onclick="dictModalToggleCollect()">＋ 加入收藏</button>
   </div>
 </div>
 
@@ -948,8 +907,7 @@ body{
   </div>
 </div>
 
-<!-- 計算機：右上角浮動按鈕＋彈出視窗 -->
-<button class="calc-fab" onclick="toggleCalcPopover()">🧮</button>
+<!-- 計算機：由底部導覽列觸發的彈出視窗 -->
 <div class="modal-mask" id="confirm-modal" onclick="if(event.target===this) closeConfirmModal(false)">
   <div class="modal-box" style="text-align:center; max-width:340px; margin:0 auto; border-radius:22px;">
     <div id="confirm-message" style="font-size:15.5px; line-height:1.7; margin:8px 0 20px; white-space:pre-line;"></div>
@@ -2283,60 +2241,31 @@ async function doSearch(){
   resultsEl.innerHTML = html ? `<div class="list-card">${html}</div>` : '<div class="empty-hint">沒有找到符合的內容</div>';
 }
 
-/* ---------------- 成語字典（呼叫 Claude API） ---------------- */
+/* ---------------- 成語字典：教育部《國語辭典》（萌典 moedict.tw 免費API） ---------------- */
 const dictCache={};
-let dictCurrentIdiom=null, dictCurrentVocab=null, dictModalChar=null;
+let dictMode='word';
 
-function dictSwitchTab(tab){
-  document.getElementById('dictTabIdiom').classList.toggle('active', tab==='idiom');
-  document.getElementById('dictTabVocab').classList.toggle('active', tab==='vocab');
-  document.getElementById('dictPanelIdiom').classList.toggle('hidden', tab!=='idiom');
-  document.getElementById('dictPanelVocab').classList.toggle('hidden', tab!=='vocab');
+function dictSetMode(mode){
+  dictMode=mode;
+  document.getElementById('dictModeWord').classList.toggle('active', mode==='word');
+  document.getElementById('dictModeChar').classList.toggle('active', mode==='char');
+  const input=document.getElementById('dictInput');
+  const hint=document.getElementById('dictModeHint');
+  const quickRow=document.getElementById('dictQuickRow');
+  if(mode==='word'){
+    input.placeholder='輸入成語或詞語，例如：守株待兔';
+    hint.textContent='查一個完整的詞語或成語';
+    quickRow.style.display='';
+  }else{
+    input.placeholder='輸入這一課的生字，例如：蚊蟻傷植救（不用打逗號或空格，會自動一個字一個字拆開查）';
+    hint.textContent='把整課生字一次貼上來，會自動拆成單字逐一查詢';
+    quickRow.style.display='none';
+  }
+  document.getElementById('dictResults').innerHTML='';
 }
-function dictQuickIdiom(val){
-  document.getElementById('dictIdiomInput').value=val;
+function dictQuickFill(val){
+  document.getElementById('dictInput').value=val;
 }
-async function dictCopyToClipboard(text){
-  try{ await navigator.clipboard.writeText(text); return true; }catch(e){ return false; }
-}
-async function dictOpenMoe(type){
-  const isIdiom = type==='idiom';
-  const term=document.getElementById(isIdiom?'dictIdiomInput':'dictVocabInput').value.trim();
-  if(!term){ alert(isIdiom?'請先輸入成語':'請先輸入單字'); return; }
-  const copied=await dictCopyToClipboard(term);
-  const url = isIdiom ? 'https://dict.idioms.moe.edu.tw/search.jsp?webMd=1&la=0' : 'https://dict.revised.moe.edu.tw/search.jsp?la=1&powerMode=0';
-  window.open(url, '_blank');
-  alert((copied? `已複製「${term}」，`:'')+'到剛開啟的教育部字典頁面搜尋框貼上查詢即可。查完後可以回來把重點記在下面收藏。');
-}
-async function dictSaveManualIdiom(){
-  const idiom=document.getElementById('dictIdiomInput').value.trim();
-  const note=document.getElementById('dictIdiomManualNote').value.trim();
-  const grade=document.getElementById('dictIdiomGrade').value;
-  const lesson=document.getElementById('dictIdiomLesson').value.trim()||'未命名課次';
-  if(!idiom){ alert('請先輸入成語'); return; }
-  const item={type:'idiom', idiom, grade, lesson, pinyin:'', meaning:note, sentence:'', breakdown:[], comic:[]};
-  const lib=(await storeGet('dict:library'))||[];
-  lib.push(item);
-  await storeSet('dict:library', lib);
-  document.getElementById('dictIdiomManualNote').value='';
-  alert('已收藏！');
-  dictRenderLibrary();
-}
-async function dictSaveManualVocab(){
-  const char=document.getElementById('dictVocabInput').value.trim();
-  const note=document.getElementById('dictVocabManualNote').value.trim();
-  const grade=document.getElementById('dictVocabGrade').value;
-  const lesson=document.getElementById('dictVocabLesson').value.trim()||'未命名課次';
-  if(!char){ alert('請先輸入單字'); return; }
-  const item={type:'vocab', char, grade, lesson, pinyin:'', radical:'', words:[], sentence1:note, sentence2:''};
-  const lib=(await storeGet('dict:library'))||[];
-  lib.push(item);
-  await storeSet('dict:library', lib);
-  document.getElementById('dictVocabManualNote').value='';
-  alert('已收藏！');
-  dictRenderLibrary();
-}
-/* ---------------- 萌典（moedict.tw）免費字典查詢，不需金鑰 ---------------- */
 async function dictFetchMoedict(term){
   const cacheKey='moe:'+term;
   if(dictCache[cacheKey]) return dictCache[cacheKey];
@@ -2356,75 +2285,94 @@ function dictMoeDefinitions(data){
   });
   return defs;
 }
-async function dictLookupIdiomFree(){
-  const idiom=document.getElementById('dictIdiomInput').value.trim();
-  const grade=document.getElementById('dictIdiomGrade').value;
-  const lesson=document.getElementById('dictIdiomLesson').value.trim()||'未命名課次';
-  if(!idiom){ alert('請輸入成語！'); return; }
-  const loading=document.getElementById('dictIdiomLoading');
-  const resultBox=document.getElementById('dictIdiomResult');
-  const btn=document.getElementById('dictMoeIdiomBtn');
-  resultBox.classList.add('hidden');
+async function dictLookup(){
+  const raw=document.getElementById('dictInput').value.trim();
+  if(!raw){ alert(dictMode==='word'?'請輸入成語或詞語':'請輸入生字'); return; }
+  const loading=document.getElementById('dictLoading');
+  const results=document.getElementById('dictResults');
+  results.innerHTML='';
   loading.classList.remove('hidden');
-  btn.disabled=true;
   try{
-    const data=await dictFetchMoedict(idiom);
-    const defs=dictMoeDefinitions(data);
-    const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
-    const meaning=defs.map(d=>d.def).join('　');
-    const sentence=(defs.find(d=>d.example)||{}).example || '';
-    const record={type:'idiom', idiom:data.title||idiom, pinyin:bopomofo, meaning, sentence, grade, lesson, source:'moedict'};
-    dictCurrentIdiom=record;
-    document.getElementById('dictIdiomMeta').textContent=`${grade} ／ ${lesson}　·　資料來源：教育部《國語辭典》`;
-    document.getElementById('dictIdiomTitle').textContent=record.idiom;
-    document.getElementById('dictIdiomPinyin').textContent=bopomofo;
-    document.getElementById('dictIdiomSentence').textContent=sentence;
-    document.getElementById('dictBreakdown').innerHTML=idiom.split('').map(ch=>
-      `<button class="dict-breakdown-item" onclick="dictOpenModal('${escapeAttr(ch)}')"><div class="bc">${escapeHtml(ch)}</div><div class="bm">點看單字解釋</div></button>`
-    ).join('');
-    document.getElementById('dictComic').innerHTML=defs.map(d=>
-      `<div class="dict-comic-item">${d.type?`<span class="cs">${escapeHtml(d.type)}</span> `:''}${escapeHtml(d.def)}</div>`
-    ).join('') || '<div class="dict-comic-item">教育部辭典查無此條目的詳細解釋。</div>';
-    resultBox.classList.remove('hidden');
-  }catch(e){
-    alert('教育部辭典查無這筆資料，可能不是收錄的成語，或打錯字了。也可以試試看「用 AI 查詢」。');
+    if(dictMode==='word'){
+      await dictRenderWordResult(raw);
+    }else{
+      const chars=[...new Set([...raw].filter(ch=>/[\u4e00-\u9fff]/.test(ch)))];
+      if(!chars.length){ alert('沒有偵測到中文字，請確認輸入內容'); return; }
+      for(const ch of chars){ await dictRenderCharCard(ch); }
+    }
   }finally{
     loading.classList.add('hidden');
-    btn.disabled=false;
   }
 }
-async function dictLookupVocabFree(){
-  const vocab=document.getElementById('dictVocabInput').value.trim();
-  const grade=document.getElementById('dictVocabGrade').value;
-  const lesson=document.getElementById('dictVocabLesson').value.trim()||'未命名課次';
-  if(!vocab){ alert('請輸入單字！'); return; }
-  const loading=document.getElementById('dictVocabLoading');
-  const resultBox=document.getElementById('dictVocabResult');
-  const btn=document.getElementById('dictMoeVocabBtn');
-  resultBox.classList.add('hidden');
-  loading.classList.remove('hidden');
-  btn.disabled=true;
+function dictIsCollected(lib, type, key){
+  return lib.some(it=> it.type===type && ((type==='idiom'&&it.idiom===key)||(type==='vocab'&&it.char===key)));
+}
+async function dictRenderWordResult(term){
+  const grade=document.getElementById('dictGrade').value;
+  const lesson=document.getElementById('dictLesson').value.trim()||'未命名課次';
+  const results=document.getElementById('dictResults');
   try{
-    const data=await dictFetchMoedict(vocab);
+    const data=await dictFetchMoedict(term);
     const defs=dictMoeDefinitions(data);
     const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
-    const examples=defs.map(d=>d.example).filter(Boolean);
-    const record={type:'vocab', char:data.title||vocab, pinyin:bopomofo, radical:'', words:[], sentence1:examples[0]||'', sentence2:examples[1]||'', grade, lesson, source:'moedict', defs};
-    dictCurrentVocab=record;
-    document.getElementById('dictVChar').textContent=record.char;
-    document.getElementById('dictVMeta').textContent=`${grade} ／ ${lesson}　·　資料來源：教育部《國語辭典》`;
-    document.getElementById('dictVPinyin').textContent=bopomofo;
-    document.getElementById('dictVWords').innerHTML=defs.map(d=>
-      `<span>${d.type?escapeHtml(d.type)+'．':''}${escapeHtml(d.def)}</span>`
-    ).join('') || '<span>查無詳細解釋</span>';
-    document.getElementById('dictVSent1').textContent=examples[0]||'';
-    document.getElementById('dictVSent2').textContent=examples[1]||'';
-    resultBox.classList.remove('hidden');
+    const title=data.title||term;
+    const meaning=defs.map(d=>d.def).join('　');
+    const sentence=(defs.find(d=>d.example)||{}).example || '';
+    const record={type:'idiom', idiom:title, pinyin:bopomofo, meaning, sentence, grade, lesson};
+    const lib=(await storeGet('dict:library'))||[];
+    const collected=dictIsCollected(lib,'idiom',title);
+    const breakdownHtml = title.length>1 ? `<div class="dict-section-label">字面拆解（點字可查單字解釋）</div>
+      <div class="dict-breakdown">${[...title].map(ch=>`<button class="dict-breakdown-item" onclick="dictOpenModal('${escapeAttr(ch)}')"><div class="bc">${escapeHtml(ch)}</div><div class="bm">點看解釋</div></button>`).join('')}</div>` : '';
+    const defsHtml = defs.length ? defs.map(d=>`<div class="dict-comic-item">${d.type?`<span class="cs">${escapeHtml(d.type)}</span> `:''}${escapeHtml(d.def)}</div>`).join('') : '<div class="dict-comic-item">教育部辭典查無詳細解釋。</div>';
+    results.innerHTML = `<div class="dict-result-card">
+      <div class="dict-result-head">
+        <div>
+          <div class="dict-result-meta">${grade} ／ ${lesson}</div>
+          <div class="dict-result-title">${escapeHtml(title)}</div>
+          <div class="dict-result-pinyin">${escapeHtml(bopomofo)}</div>
+        </div>
+        <button class="dict-collect-btn ${collected?'collected':''}" id="dcb-word-${escapeAttr(title)}" onclick='dictToggleCollect(${JSON.stringify(record)}, this)'>${collected?'✓ 已收藏':'＋ 加入'}</button>
+      </div>
+      <div class="dict-result-body">
+        ${breakdownHtml}
+        <div class="dict-section-label" style="margin-top:${breakdownHtml?'14px':'0'};">辭典解釋</div>
+        <div class="dict-comic">${defsHtml}</div>
+        ${sentence?`<div class="dict-section-label">例句</div><div class="dict-sentence">${escapeHtml(sentence)}</div>`:''}
+      </div>
+    </div>`;
   }catch(e){
-    alert('教育部辭典查無這個字，可能打錯字了，也可以試試看「用 AI 查詢」。');
-  }finally{
-    loading.classList.add('hidden');
-    btn.disabled=false;
+    results.innerHTML = `<div class="empty-hint">教育部辭典查無「${escapeHtml(term)}」，可能不是收錄的詞語，或打錯字了。</div>`;
+  }
+}
+async function dictRenderCharCard(ch){
+  const grade=document.getElementById('dictGrade').value;
+  const lesson=document.getElementById('dictLesson').value.trim()||'未命名課次';
+  const results=document.getElementById('dictResults');
+  const cardId='dcc-'+ch.codePointAt(0);
+  results.insertAdjacentHTML('beforeend', `<div class="dict-char-card" id="${cardId}">
+    <div class="dcc-char">${escapeHtml(ch)}</div>
+    <div class="dcc-body"><div class="dcc-bopomofo">查詢中…</div></div>
+  </div>`);
+  try{
+    const data=await dictFetchMoedict(ch);
+    const defs=dictMoeDefinitions(data);
+    const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
+    const radical=data.radical||'';
+    const examples=defs.map(d=>d.example).filter(Boolean);
+    const meaning=defs.map(d=>d.def).join('　');
+    const record={type:'vocab', char:data.title||ch, pinyin:bopomofo, radical, words:examples, sentence1:examples[0]||'', sentence2:examples[1]||'', grade, lesson};
+    const lib=(await storeGet('dict:library'))||[];
+    const collected=dictIsCollected(lib,'vocab',record.char);
+    const el=document.getElementById(cardId);
+    el.querySelector('.dcc-body').innerHTML=`
+      <div class="dcc-bopomofo">${escapeHtml(bopomofo)}${radical?`　部首：${escapeHtml(radical)}`:''}</div>
+      <div class="dcc-meaning">${escapeHtml(meaning)||'查無詳細解釋'}</div>
+      ${examples.length?`<div class="dcc-meaning">例句／造詞：${examples.map(escapeHtml).join('；')}</div>`:''}
+    `;
+    el.insertAdjacentHTML('beforeend', `<button class="dict-collect-btn ${collected?'collected':''}" onclick='dictToggleCollect(${JSON.stringify(record)}, this)'>${collected?'✓ 已收藏':'＋ 加入'}</button>`);
+  }catch(e){
+    const el=document.getElementById(cardId);
+    el.querySelector('.dcc-body').innerHTML=`<div class="dcc-not-found">教育部辭典查無這個字</div>`;
   }
 }
 async function dictOpenModal(char){
@@ -2440,47 +2388,47 @@ async function dictOpenModal(char){
     const moe=await dictFetchMoedict(char);
     const defs=dictMoeDefinitions(moe);
     const bopomofo=(moe.heteronyms[0]||{}).bopomofo || (moe.heteronyms[0]||{}).bopomofo2 || '';
-    const data={char, pinyin:bopomofo, radical:'', meaning:defs.map(d=>d.def).join('　'), words:defs.map(d=>d.example).filter(Boolean)};
-    dictModalChar=data;
-    document.getElementById('dictModalPinyin').textContent=data.pinyin||'';
-    document.getElementById('dictModalMeaning').textContent=data.meaning||'查無解釋';
-    document.getElementById('dictModalWords').innerHTML=(data.words||[]).map(w=>`<span>${escapeHtml(w)}</span>`).join('');
+    const radical=moe.radical||'';
+    const meaning=defs.map(d=>d.def).join('　');
+    const words=defs.map(d=>d.example).filter(Boolean);
+    document.getElementById('dictModalPinyin').textContent=bopomofo;
+    document.getElementById('dictModalRadical').textContent=radical?('部首：'+radical):'';
+    document.getElementById('dictModalMeaning').textContent=meaning||'查無解釋';
+    document.getElementById('dictModalWords').innerHTML=words.map(w=>`<span>${escapeHtml(w)}</span>`).join('');
+    const grade=document.getElementById('dictGrade').value;
+    const lesson=document.getElementById('dictLesson').value.trim()||'未命名課次';
+    const record={type:'vocab', char:moe.title||char, pinyin:bopomofo, radical, words, sentence1:words[0]||'', sentence2:words[1]||'', grade, lesson};
+    const lib=(await storeGet('dict:library'))||[];
+    const collected=dictIsCollected(lib,'vocab',record.char);
+    document.getElementById('dictModalCollectBtn').className='dict-collect-btn'+(collected?' collected':'');
+    document.getElementById('dictModalCollectBtn').textContent=collected?'✓ 已收藏':'＋ 加入收藏';
+    document.getElementById('dictModalCollectBtn').setAttribute('data-record', JSON.stringify(record));
   }catch(e){
     document.getElementById('dictModalMeaning').textContent='教育部辭典查無這個字，可能是罕見字或打錯字了。';
     document.getElementById('dictModalRadical').textContent='';
   }
 }
 function dictCloseModal(){ document.getElementById('dict-modal').classList.remove('show'); }
-async function dictSaveModalChar(){
-  if(!dictModalChar) return;
-  const item={
-    type:'vocab',
-    grade:document.getElementById('dictIdiomGrade').value,
-    lesson:document.getElementById('dictIdiomLesson').value.trim()||'未命名課次',
-    char:dictModalChar.char, pinyin:dictModalChar.pinyin, radical:dictModalChar.radical,
-    words:dictModalChar.words||[], sentence1:dictModalChar.meaning||'', sentence2:(dictModalChar.words||[]).join('、')
-  };
-  const lib=(await storeGet('dict:library'))||[];
-  lib.push(item);
-  await storeSet('dict:library', lib);
-  alert(`已將「${dictModalChar.char}」加入生字收藏！`);
-  dictCloseModal();
-  dictRenderLibrary();
+async function dictModalToggleCollect(){
+  const btn=document.getElementById('dictModalCollectBtn');
+  const record=JSON.parse(btn.getAttribute('data-record')||'null');
+  if(!record) return;
+  await dictToggleCollect(record, btn);
 }
-async function dictSaveIdiom(){
-  if(!dictCurrentIdiom) return;
+async function dictToggleCollect(record, btnEl){
   const lib=(await storeGet('dict:library'))||[];
-  lib.push(dictCurrentIdiom);
+  const key = record.type==='idiom' ? record.idiom : record.char;
+  const idx=lib.findIndex(it=> it.type===record.type && ((record.type==='idiom'&&it.idiom===key)||(record.type==='vocab'&&it.char===key)));
+  if(idx>-1){
+    lib.splice(idx,1);
+    btnEl.classList.remove('collected');
+    btnEl.textContent='＋ 加入';
+  }else{
+    lib.push(record);
+    btnEl.classList.add('collected');
+    btnEl.textContent='✓ 已收藏';
+  }
   await storeSet('dict:library', lib);
-  alert('已收藏成語！');
-  dictRenderLibrary();
-}
-async function dictSaveVocab(){
-  if(!dictCurrentVocab) return;
-  const lib=(await storeGet('dict:library'))||[];
-  lib.push(dictCurrentVocab);
-  await storeSet('dict:library', lib);
-  alert('已收藏生字！');
   dictRenderLibrary();
 }
 async function dictRenderLibrary(){
@@ -2535,6 +2483,17 @@ async function dictClearLibrary(){
 }
 
 /* ---------------- 啟動 ---------------- */
+/* ---------------- 頂部日期時間列 ---------------- */
+function updateGlobalClock(){
+  const now=new Date();
+  const weekNames=['日','一','二','三','四','五','六'];
+  const y=now.getFullYear(), m=now.getMonth()+1, d=now.getDate();
+  const hh=String(now.getHours()).padStart(2,'0'), mm=String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('global-clock-text').textContent=`${y}年${m}月${d}日（週${weekNames[now.getDay()]}）　${hh}:${mm}`;
+}
+updateGlobalClock();
+setInterval(updateGlobalClock, 15000);
+
 setupSideItemLongPress();
 renderHome();
 </script>
