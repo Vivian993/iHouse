@@ -460,7 +460,19 @@ body{
 .section-title{font-size:16px; font-weight:700; margin:14px 0 10px;}
 
 /* ---------- 成語字典 ---------- */
-.dict-tabs{display:flex; gap:10px; margin:14px 0;}
+.dict-tabs{display:flex; gap:10px; margin:14px 0 10px; position:sticky; top:0; background:var(--cream); padding-top:6px; z-index:16;}
+.dict-sticky-bar{
+  display:flex; gap:8px; position:sticky; top:52px; z-index:15; background:var(--cream);
+  padding:6px 0 12px;
+}
+.dict-sticky-bar input{
+  flex:1; min-width:0; border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:15.5px;
+  font-family:inherit; background:#fff; box-shadow:var(--shadow-sm);
+}
+.dict-sticky-btn{
+  flex:0 0 auto; border:none; background:var(--pink-deep); color:#fff; font-weight:700; font-size:14.5px;
+  padding:0 16px; border-radius:12px; box-shadow:var(--shadow-sm);
+}
 .dict-tab{
   flex:1; border:none; border-radius:14px; padding:12px 0; font-family:'ZCOOL KuaiLe',cursive; font-size:15px;
   background:#fff; color:var(--ink-soft); box-shadow:var(--shadow-sm);
@@ -744,10 +756,11 @@ body{
 
     <!-- 成語面板 -->
     <div id="dictPanelIdiom">
+      <div class="dict-sticky-bar">
+        <input type="text" id="dictIdiomInput" placeholder="輸入成語，例如：守株待兔">
+        <button class="dict-sticky-btn" id="dictMoeIdiomBtn" onclick="dictLookupIdiomFree()">🔍 查詢</button>
+      </div>
       <div class="dict-card">
-        <div class="dict-form-row">
-          <input type="text" id="dictIdiomInput" placeholder="輸入成語，例如：守株待兔">
-        </div>
         <div class="dict-form-row two">
           <select id="dictIdiomGrade">
             <option>一年級</option><option>二年級</option><option>三年級</option>
@@ -755,7 +768,6 @@ body{
           </select>
           <input type="text" id="dictIdiomLesson" placeholder="課名（選填，例：第1課）">
         </div>
-        <button class="dict-submit-btn" id="dictMoeIdiomBtn" onclick="dictLookupIdiomFree()" style="background:var(--mint-deep); margin-bottom:8px;">📖 查詢成語（教育部辭典，免金鑰、完全免費）</button>
         <div class="dict-quick-row">
           <span>快速試試：</span>
           <button class="dict-chip-btn" onclick="dictQuickIdiom('守株待兔')">守株待兔</button>
@@ -771,7 +783,7 @@ body{
 
       <div id="dictIdiomLoading" class="dict-loading hidden">
         <div class="dict-spinner"></div>
-        <div>AI 查詢中，請稍等一下…</div>
+        <div>查詢中，請稍等一下…</div>
       </div>
 
       <div id="dictIdiomResult" class="dict-result-card hidden">
@@ -796,10 +808,11 @@ body{
 
     <!-- 生字面板 -->
     <div id="dictPanelVocab" class="hidden">
+      <div class="dict-sticky-bar">
+        <input type="text" id="dictVocabInput" placeholder="輸入一個單字，例如：毫" maxlength="1">
+        <button class="dict-sticky-btn" id="dictMoeVocabBtn" onclick="dictLookupVocabFree()">🔍 查詢</button>
+      </div>
       <div class="dict-card">
-        <div class="dict-form-row">
-          <input type="text" id="dictVocabInput" placeholder="輸入一個單字，例如：毫" maxlength="1">
-        </div>
         <div class="dict-form-row two">
           <select id="dictVocabGrade">
             <option>一年級</option><option>二年級</option><option>三年級</option>
@@ -807,7 +820,6 @@ body{
           </select>
           <input type="text" id="dictVocabLesson" placeholder="課名（選填）">
         </div>
-        <button class="dict-submit-btn" id="dictMoeVocabBtn" onclick="dictLookupVocabFree()" style="background:var(--mint-deep); margin-bottom:8px;">📖 查詢生字（教育部辭典，免金鑰、完全免費）</button>
       </div>
       <div class="dict-card" id="dict-manual-vocab-box" style="margin-top:12px;">
         <div class="dict-section-label" style="margin-top:0;">📝 查完了嗎？把重點記下來</div>
@@ -817,7 +829,7 @@ body{
 
       <div id="dictVocabLoading" class="dict-loading hidden">
         <div class="dict-spinner"></div>
-        <div>AI 查詢中，請稍等一下…</div>
+        <div>查詢中，請稍等一下…</div>
       </div>
 
       <div id="dictVocabResult" class="dict-result-card hidden">
@@ -847,13 +859,20 @@ body{
         <div class="tape-label" style="margin:0;">🗂️ 收藏庫</div>
         <button class="dict-chip-btn" onclick="dictClearLibrary()">清空收藏</button>
       </div>
-      <div class="dict-form-row two" style="margin-top:10px;">
+      <div class="dict-form-row" style="margin-top:10px;">
+        <input type="text" id="dictFilterKeyword" oninput="dictRenderLibrary()" placeholder="🔍 搜尋收藏（成語、生字、意思、課名都可以打）">
+      </div>
+      <div class="dict-form-row two">
         <select id="dictFilterGrade" onchange="dictRenderLibrary()">
           <option value="">全部年級</option>
           <option>一年級</option><option>二年級</option><option>三年級</option>
           <option>四年級</option><option>五年級</option><option>六年級</option>
         </select>
-        <input type="text" id="dictFilterLesson" oninput="dictRenderLibrary()" placeholder="依課名篩選…">
+        <select id="dictFilterType" onchange="dictRenderLibrary()">
+          <option value="">全部類型</option>
+          <option value="idiom">只看成語</option>
+          <option value="vocab">只看生字</option>
+        </select>
       </div>
       <div id="dictLibrary" style="margin-top:12px;"></div>
     </div>
@@ -1597,10 +1616,10 @@ function playTossSound(){
 }
 function playChime(){ playTone(880,0.18,'sine',0.14); setTimeout(()=>playTone(1180,0.22,'sine',0.12),110); }
 function playSoftNo(){ playTone(320,0.25,'sine',0.12); }
-// 讓每個按鈕點擊都有回饋音
+// 讓每個可點擊的地方（按鈕、卡片、格子）都有回饋音
 document.addEventListener('click', (e)=>{
-  const btn=e.target.closest('button');
-  if(btn) playClick();
+  const el=e.target.closest('button, [onclick]');
+  if(el) playClick();
 }, true);
 
 /* ---------------- 六十甲子籤 ---------------- */
@@ -2468,11 +2487,19 @@ async function dictRenderLibrary(){
   const container=document.getElementById('dictLibrary');
   const lib=(await storeGet('dict:library'))||[];
   const fg=document.getElementById('dictFilterGrade').value;
-  const fl=document.getElementById('dictFilterLesson').value.trim();
+  const ft=document.getElementById('dictFilterType').value;
+  const fk=document.getElementById('dictFilterKeyword').value.trim();
   let filtered=lib.map((it,idx)=>({...it, _idx:idx}));
   if(fg) filtered=filtered.filter(it=>it.grade===fg);
-  if(fl) filtered=filtered.filter(it=>(it.lesson||'').includes(fl));
-  if(!filtered.length){ container.innerHTML='<div class="empty-hint">目前還沒有收藏的內容</div>'; return; }
+  if(ft) filtered=filtered.filter(it=>it.type===ft);
+  if(fk){
+    filtered=filtered.filter(it=>{
+      const haystack=[it.idiom,it.char,it.pinyin,it.meaning,it.sentence,it.sentence1,it.sentence2,it.lesson,(it.words||[]).join('、')]
+        .filter(Boolean).join(' ');
+      return haystack.includes(fk);
+    });
+  }
+  if(!filtered.length){ container.innerHTML='<div class="empty-hint">找不到符合的收藏內容</div>'; return; }
   const grouped={};
   filtered.forEach(it=>{
     const key=`${it.grade||''} ${it.lesson||''}`;
