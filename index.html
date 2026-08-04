@@ -702,7 +702,7 @@ body{
       <div class="row">
         <button type="button" class="img-picker" id="folder-img-picker-btn" onclick="document.getElementById('folder-img-file').click()">🗂️</button>
         <input type="file" id="folder-img-file" accept="image/*" style="display:none" onchange="handleFolderImgSelect(event)">
-        <input type="text" id="folder-emoji" placeholder="或輸入 emoji" style="flex:0 0 90px; text-align:center;" maxlength="2">
+        <input type="text" id="folder-emoji" placeholder="emoji 或貼網址" style="flex:0 0 130px; text-align:center;">
         <input type="text" id="folder-name" placeholder="新增分類名稱，例如：數學">
       </div>
       <button onclick="addFolder()">＋ 新增分類</button>
@@ -743,7 +743,7 @@ body{
       <div style="width:38px;"></div>
     </div>
     <div class="search-bar">
-      <input type="text" id="search-input" placeholder="搜尋待辦事項、收藏、入口內容…" oninput="doSearch()">
+      <input type="text" id="search-input" placeholder="搜尋待辦事項、收藏、入口內容…">
     </div>
     <div id="search-results"></div>
   </section>
@@ -819,7 +819,7 @@ body{
         <button class="dict-chip-btn" onclick="dictClearLibrary()">清空收藏</button>
       </div>
       <div class="dict-form-row" style="margin-top:10px;">
-        <input type="text" id="dictFilterKeyword" oninput="dictRenderLibrary()" placeholder="🔍 搜尋收藏（成語、生字、意思、課名都可以打）">
+        <input type="text" id="dictFilterKeyword" placeholder="🔍 搜尋收藏（成語、生字、意思、課名都可以打）">
       </div>
       <div class="dict-form-row two">
         <select id="dictFilterLesson" onchange="dictRenderLibrary()">
@@ -1327,8 +1327,17 @@ async function openPortal(key){
   state.currentFolder=null;
   document.getElementById('portal-title').textContent=PORTAL_META[key].title;
   document.getElementById('portal-tape').textContent=PORTAL_META[key].tape;
+  await ensureDefaultFolder(key);
   go('portal');
   await renderFolderList();
+}
+async function ensureDefaultFolder(key){
+  const fKey='folders:'+key;
+  const folders=(await storeGet(fKey)) || [];
+  if(!folders.some(f=>f.name==='常用')){
+    folders.unshift({id:'default-'+key, name:'常用', emoji:'📌', img:null});
+    await storeSet(fKey, folders);
+  }
 }
 
 /* ---------------- 分類（資料夾） ---------------- */
@@ -1337,11 +1346,23 @@ async function renderFolderList(){
   const folders=(await storeGet('folders:'+key)) || [];
   const items=(await storeGet('portal:'+key)) || [];
   const listEl=document.getElementById('folder-list');
+  const defaultFolderId='default-'+key;
+  const quickItems=items.filter(it=>it.folderId===defaultFolderId);
   if(!folders.length){
     listEl.innerHTML='<div class="empty-hint">先新增一個分類資料夾吧！例如「數學」「診所」「常用網站」</div>';
     return;
   }
-  listEl.innerHTML='<div class="folder-grid">'+folders.map(f=>{
+  const quickHtml=quickItems.map(it=>{
+    const iconHtml = it.img ? `<img src="${it.img}" style="width:44px;height:44px;object-fit:cover;border-radius:12px;">` : (it.emoji||'🔗');
+    return `<div class="folder-card" onclick="openPortalLink(event,'${escapeAttr(it.url||'')}')">
+      <button class="fc-del" onclick="event.stopPropagation();deletePortalItemDirect('${it.id}')">✕</button>
+      <button class="fc-del" style="right:34px;background:#fff;color:var(--ink-soft);" onclick="event.stopPropagation();editQuickItem('${it.id}')">✎</button>
+      <div class="fc-emoji">${iconHtml}</div>
+      <div class="fc-name">${escapeHtml(it.name)}</div>
+      <div class="fc-count">直達</div>
+    </div>`;
+  }).join('');
+  const folderHtml=folders.filter(f=>f.id!==defaultFolderId).map(f=>{
     const count=items.filter(it=>it.folderId===f.id).length;
     const emojiHtml = f.img ? `<img src="${f.img}" style="width:44px;height:44px;object-fit:cover;border-radius:12px;">` : (f.emoji||'🗂️');
     return `<div class="folder-card" onclick="openFolder('${f.id}')">
@@ -1350,7 +1371,21 @@ async function renderFolderList(){
       <div class="fc-name">${escapeHtml(f.name)}</div>
       <div class="fc-count">${count} 項</div>
     </div>`;
-  }).join('')+'</div>';
+  }).join('');
+  listEl.innerHTML='<div class="folder-grid">'+quickHtml+folderHtml+'</div>';
+}
+async function deletePortalItemDirect(id){
+  const ok=await showConfirm('刪除這個項目嗎？','確定刪除','取消');
+  if(!ok) return;
+  const iKey='portal:'+state.currentPortal;
+  let items=(await storeGet(iKey)) || [];
+  items=items.filter(it=>it.id!==id);
+  await storeSet(iKey, items);
+  renderFolderList();
+}
+async function editQuickItem(id){
+  await openFolder('default-'+state.currentPortal);
+  await editPortalItem(id);
 }
 const state_folder_img={pending:null};
 async function handleFolderImgSelect(e){
@@ -1364,8 +1399,28 @@ async function addFolder(){
   const nameInput=document.getElementById('folder-name');
   const emojiInput=document.getElementById('folder-emoji');
   const name=nameInput.value.trim();
+  const emojiVal=emojiInput.value.trim();
+
+  // 如果這格貼的是網址，直接在「常用」資料夾建立單一項目，不用另外建分類
+  const looksLikeUrl = /^https?:\/\//i.test(emojiVal) || /^[a-z0-9.-]+\.[a-z]{2,}(\/|$)/i.test(emojiVal);
+  if(looksLikeUrl){
+    await ensureDefaultFolder(state.currentPortal);
+    const fullUrl = /^https?:\/\//i.test(emojiVal) ? emojiVal : 'https://'+emojiVal;
+    let quickName=name;
+    if(!quickName){
+      try{ quickName=new URL(fullUrl).hostname.replace(/^www\./,''); }catch(e){ quickName=emojiVal; }
+    }
+    const iKey='portal:'+state.currentPortal;
+    const items=(await storeGet(iKey)) || [];
+    items.push({id:Date.now()+'', emoji:'🔗', img:null, name:quickName, url:fullUrl, phone:'', note:'', folderId:'default-'+state.currentPortal});
+    await storeSet(iKey, items);
+    nameInput.value=''; emojiInput.value='';
+    renderFolderList();
+    return;
+  }
+
   if(!name) return;
-  const emoji=emojiInput.value.trim()||'🗂️';
+  const emoji=emojiVal||'🗂️';
   const key='folders:'+state.currentPortal;
   const folders=(await storeGet(key)) || [];
   folders.push({id:Date.now()+'', name, emoji, img:state_folder_img.pending});
@@ -1554,7 +1609,7 @@ function playTone(freq,dur,type,vol){
     osc.start(); osc.stop(ctx.currentTime+dur);
   }catch(e){}
 }
-function playClick(){ playTone(680,0.07,'sine',0.10); }
+function playClick(){ playTone(680,0.08,'sine',0.22); }
 function playNoiseBurst(dur,vol,filterFreq){
   try{
     const ctx=getAudioCtx();
@@ -2221,6 +2276,14 @@ async function deletePortalItem(id){
 }
 
 /* ---------------- 搜尋 ---------------- */
+function attachIMESafeInput(inputId, callback){
+  const el=document.getElementById(inputId);
+  if(!el) return;
+  let composing=false;
+  el.addEventListener('compositionstart', ()=>{ composing=true; });
+  el.addEventListener('compositionend', ()=>{ composing=false; callback(); });
+  el.addEventListener('input', ()=>{ if(!composing) callback(); });
+}
 async function doSearch(){
   const q=document.getElementById('search-input').value.trim().toLowerCase();
   const resultsEl=document.getElementById('search-results');
@@ -2228,11 +2291,11 @@ async function doSearch(){
   let html='';
   for(const key of ['kids','me','life','fav','phone']){
     const items=(await storeGet('portal:'+key)) || [];
-    items.filter(it=>it.name.toLowerCase().includes(q)).forEach(it=>{
+    items.filter(it=> it.name.toLowerCase().includes(q) || (it.note||'').toLowerCase().includes(q) || (it.url||'').toLowerCase().includes(q) ).forEach(it=>{
       const iconHtml = it.img ? `<img src="${it.img}">` : (it.emoji||'🙂');
       html+=`<div class="list-row" onclick="openPortalLink(event,'${escapeAttr(it.url||'')}')">
         <div class="row-icon">${iconHtml}</div>
-        <div class="row-text"><div class="row-title">${escapeHtml(it.name)}</div><div class="row-sub">${PORTAL_META[key].title}</div></div>
+        <div class="row-text"><div class="row-title">${escapeHtml(it.name)}</div><div class="row-sub">${PORTAL_META[key].title}${it.note?'　·　'+escapeHtml(it.note):''}</div></div>
       </div>`;
     });
   }
@@ -2511,6 +2574,8 @@ function updateGlobalClock(){
 updateGlobalClock();
 setInterval(updateGlobalClock, 15000);
 
+attachIMESafeInput('search-input', doSearch);
+attachIMESafeInput('dictFilterKeyword', dictRenderLibrary);
 setupSideItemLongPress();
 renderHome();
 </script>
