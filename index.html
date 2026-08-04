@@ -1505,9 +1505,11 @@ async function addFolder(){
     }
     const iKey='portal:'+state.currentPortal;
     const items=(await storeGet(iKey)) || [];
-    items.push({id:Date.now()+'', emoji:'🔗', img:null, name:quickName, url:fullUrl, phone:'', note:'', folderId:'default-'+state.currentPortal});
+    items.push({id:Date.now()+'', emoji:'🔗', img:state_folder_img.pending||null, name:quickName, url:fullUrl, phone:'', note:'', folderId:'default-'+state.currentPortal});
     await storeSet(iKey, items);
     nameInput.value=''; emojiInput.value='';
+    state_folder_img.pending=null;
+    document.getElementById('folder-img-picker-btn').innerHTML='🗂️';
     renderFolderList();
     return;
   }
