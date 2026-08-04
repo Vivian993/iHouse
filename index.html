@@ -384,6 +384,11 @@ body{
   background:#fff; color:var(--red); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0;
   box-shadow:var(--shadow-sm); z-index:2;
 }
+.folder-card .fc-more{
+  position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:8px; border:none;
+  background:rgba(255,255,255,0.85); color:var(--ink-soft); font-size:13px; font-weight:900; letter-spacing:1px; display:flex; align-items:center; justify-content:center; padding:0;
+  z-index:2;
+}
 .list-row{
   display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px dashed var(--line);
 }
@@ -923,6 +928,28 @@ body{
   </div>
 </div>
 
+<div class="modal-mask" id="action-sheet-modal" onclick="if(event.target===this) closeActionSheet(null)">
+  <div class="modal-box" style="text-align:center; max-width:340px; margin:0 auto; border-radius:22px;">
+    <div id="action-sheet-title" style="font-size:15px; color:var(--ink-soft); margin-bottom:14px;"></div>
+    <div id="action-sheet-buttons" style="display:flex; flex-direction:column; gap:10px;"></div>
+    <button class="dict-chip-btn" style="width:100%; padding:12px 0; font-size:14.5px; margin-top:10px;" onclick="closeActionSheet(null)">取消</button>
+  </div>
+</div>
+
+<div class="modal-mask" id="quick-edit-modal" onclick="if(event.target===this) closeQuickEditModal()">
+  <div class="modal-box" style="max-width:360px; margin:0 auto; border-radius:22px;">
+    <button class="modal-close" onclick="closeQuickEditModal()">✕</button>
+    <h2 class="title-font" style="font-size:18px;margin-bottom:14px;">✏️ 編輯項目</h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+      <button id="qe-img-btn" onclick="document.getElementById('qe-img-file').click()" style="width:56px;height:56px;border-radius:14px;border:1px dashed var(--line);background:var(--cream);font-size:22px;flex:0 0 56px;">🔗</button>
+      <input type="text" id="qe-name" placeholder="名稱" style="flex:1;">
+    </div>
+    <input type="file" id="qe-img-file" accept="image/*" style="display:none;" onchange="handleQuickEditImg(event)">
+    <input type="text" id="qe-url" placeholder="網址" style="width:100%; margin-bottom:14px;">
+    <button class="draw-card-btn" style="width:100%;" onclick="saveQuickEdit()">儲存</button>
+  </div>
+</div>
+
 <div class="modal-mask" id="calc-popover-mask" onclick="if(event.target===this) closeCalcPopover()">
   <div class="modal-box calc-popover-box">
     <button class="modal-close" onclick="closeCalcPopover()">✕</button>
@@ -1355,8 +1382,7 @@ async function renderFolderList(){
   const quickHtml=quickItems.map(it=>{
     const iconHtml = it.img ? `<img src="${it.img}" style="width:44px;height:44px;object-fit:cover;border-radius:12px;">` : (it.emoji||'🔗');
     return `<div class="folder-card" onclick="openPortalLink(event,'${escapeAttr(it.url||'')}')">
-      <button class="fc-del" onclick="event.stopPropagation();deletePortalItemDirect('${it.id}')">✕</button>
-      <button class="fc-del" style="right:34px;background:#fff;color:var(--ink-soft);" onclick="event.stopPropagation();editQuickItem('${it.id}')">✎</button>
+      <button class="fc-more" onclick="event.stopPropagation();openCardActions('quick','${it.id}')">⋯</button>
       <div class="fc-emoji">${iconHtml}</div>
       <div class="fc-name">${escapeHtml(it.name)}</div>
       <div class="fc-count">直達</div>
@@ -1366,13 +1392,83 @@ async function renderFolderList(){
     const count=items.filter(it=>it.folderId===f.id).length;
     const emojiHtml = f.img ? `<img src="${f.img}" style="width:44px;height:44px;object-fit:cover;border-radius:12px;">` : (f.emoji||'🗂️');
     return `<div class="folder-card" onclick="openFolder('${f.id}')">
-      <button class="fc-del" onclick="event.stopPropagation();deleteFolder('${f.id}')">✕</button>
+      <button class="fc-more" onclick="event.stopPropagation();openCardActions('folder','${f.id}')">⋯</button>
       <div class="fc-emoji">${emojiHtml}</div>
       <div class="fc-name">${escapeHtml(f.name)}</div>
       <div class="fc-count">${count} 項</div>
     </div>`;
   }).join('');
   listEl.innerHTML='<div class="folder-grid">'+quickHtml+folderHtml+'</div>';
+}
+let _actionSheetResolver=null;
+function showActionSheet(title, actions){
+  document.getElementById('action-sheet-title').textContent=title||'';
+  document.getElementById('action-sheet-buttons').innerHTML=actions.map(a=>
+    `<button class="${a.danger?'dict-chip-btn':'draw-card-btn'}" style="width:100%;${a.danger?'color:var(--red);border-color:var(--red);':''}" onclick="closeActionSheet('${a.key}')">${a.label}</button>`
+  ).join('');
+  document.getElementById('action-sheet-modal').classList.add('show');
+  return new Promise(resolve=>{ _actionSheetResolver=resolve; });
+}
+function closeActionSheet(key){
+  document.getElementById('action-sheet-modal').classList.remove('show');
+  if(_actionSheetResolver){ _actionSheetResolver(key); _actionSheetResolver=null; }
+}
+async function openCardActions(type, id){
+  if(type==='quick'){
+    const choice=await showActionSheet('這個項目要做什麼？', [
+      {key:'edit', label:'✏️ 編輯'},
+      {key:'delete', label:'🗑️ 刪除', danger:true}
+    ]);
+    if(choice==='edit') openQuickEditModal(id);
+    else if(choice==='delete') deletePortalItemDirect(id);
+  } else {
+    const choice=await showActionSheet('這個分類要做什麼？', [
+      {key:'delete', label:'🗑️ 刪除分類', danger:true}
+    ]);
+    if(choice==='delete') deleteFolder(id);
+  }
+}
+
+/* 直達項目：同一畫面內編輯，不跳頁 */
+const state_qe={editingId:null, pendingImg:undefined};
+async function openQuickEditModal(id){
+  const key='portal:'+state.currentPortal;
+  const items=(await storeGet(key)) || [];
+  const item=items.find(it=>it.id===id);
+  if(!item) return;
+  state_qe.editingId=id;
+  state_qe.pendingImg=undefined;
+  document.getElementById('qe-name').value=item.name||'';
+  document.getElementById('qe-url').value=item.url||'';
+  const btn=document.getElementById('qe-img-btn');
+  btn.innerHTML = item.img ? `<img src="${item.img}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">` : '🔗';
+  document.getElementById('quick-edit-modal').classList.add('show');
+}
+function closeQuickEditModal(){
+  document.getElementById('quick-edit-modal').classList.remove('show');
+  state_qe.editingId=null;
+}
+async function handleQuickEditImg(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const dataUrl=await compressImage(file);
+  state_qe.pendingImg=dataUrl;
+  document.getElementById('qe-img-btn').innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
+}
+async function saveQuickEdit(){
+  if(!state_qe.editingId) return;
+  const name=document.getElementById('qe-name').value.trim();
+  const url=document.getElementById('qe-url').value.trim();
+  if(!name) return;
+  const key='portal:'+state.currentPortal;
+  const items=(await storeGet(key)) || [];
+  const idx=items.findIndex(it=>it.id===state_qe.editingId);
+  if(idx>-1){
+    items[idx]={...items[idx], name, url, img: state_qe.pendingImg!==undefined ? state_qe.pendingImg : items[idx].img};
+    await storeSet(key, items);
+  }
+  closeQuickEditModal();
+  renderFolderList();
 }
 async function deletePortalItemDirect(id){
   const ok=await showConfirm('刪除這個項目嗎？','確定刪除','取消');
@@ -1383,10 +1479,7 @@ async function deletePortalItemDirect(id){
   await storeSet(iKey, items);
   renderFolderList();
 }
-async function editQuickItem(id){
-  await openFolder('default-'+state.currentPortal);
-  await editPortalItem(id);
-}
+
 const state_folder_img={pending:null};
 async function handleFolderImgSelect(e){
   const file=e.target.files[0];
