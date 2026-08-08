@@ -163,6 +163,16 @@ body{
   flex:0 0 44px; border:none; background:var(--pink); color:#fff; border-radius:14px; width:44px; font-size:18px; font-weight:700;
 }
 .todo-list{margin-top:10px; display:flex; flex-direction:column; gap:8px;}
+.todo-compact-list{margin-top:8px; background:#fff; border-radius:16px; box-shadow:var(--shadow-sm); overflow:hidden;}
+.todo-compact-row{display:flex; align-items:center; gap:8px; padding:9px 12px; border-bottom:1px solid var(--line);}
+.todo-compact-row:last-child{border-bottom:none;}
+.todo-compact-chk{border:none; background:none; font-size:15px; flex:0 0 auto; padding:0; line-height:1;}
+.todo-compact-date{
+  flex:0 0 auto; font-size:11.5px; font-weight:700; color:var(--pink-deep); background:var(--cream);
+  padding:3px 7px; border-radius:7px; white-space:nowrap;
+}
+.todo-compact-text{flex:1; font-size:13.5px; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.todo-compact-icon{border:none; background:none; font-size:13px; flex:0 0 auto; padding:2px; line-height:1; opacity:0.75;}
 .todo-item{
   display:flex; align-items:center; gap:10px; background:#fff; border-radius:14px; padding:9px 12px;
   box-shadow:var(--shadow-sm); font-size:15.5px;
@@ -628,7 +638,6 @@ body{
   <div class="side-item-wrap"><button class="side-item" data-side="portal-life" data-icon-key="life" onclick="openPortal('life')"><span class="ic ic-life" id="sideicon-life">🌐</span><span>網頁工具</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="portal-fav" data-icon-key="fav" onclick="openPortal('fav')"><span class="ic ic-fav" id="sideicon-fav">⭐</span><span>收藏</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="portal-phone" data-icon-key="phone" onclick="openPortal('phone')"><span class="ic ic-phone" id="sideicon-phone">📞</span><span>電話簿</span></button></div>
-  <div class="side-item-wrap"><button class="side-item" data-side="alltodos" data-icon-key="alltodos" onclick="go('alltodos')"><span class="ic ic-alltodos" id="sideicon-alltodos">📔</span><span>待辦總覽</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="dict" data-icon-key="dict" onclick="go('dict')"><span class="ic ic-dict" id="sideicon-dict">📖</span><span>成語字典</span></button></div>
 </nav>
 
@@ -706,14 +715,18 @@ body{
     <button class="am-toggle" id="cal-collapse-btn" style="display:block; width:fit-content; margin:6px auto 14px;" onclick="toggleCalGrid()">收合月曆 ▴</button>
 
     <div class="hero-todo-title" style="margin-top:0;">
-      <h3 id="am-todo-title">📝 這天的待辦</h3>
-      <span class="count" id="am-todo-count"></span>
+      <h3 id="am-todo-title">📝 新增待辦</h3>
     </div>
     <div class="todo-quick-add">
       <input type="text" id="am-todo-input" placeholder="輸入待辦事項…">
       <button onclick="selectedDayAddTodo()">＋</button>
     </div>
-    <div class="todo-list" id="am-todo-list"></div>
+
+    <div class="hero-todo-title" style="margin-top:16px;">
+      <h3>📋 所有待辦</h3>
+      <span class="count" id="am-todo-count"></span>
+    </div>
+    <div class="todo-compact-list" id="am-todo-list"></div>
   </section>
 
   <section class="screen almanac-screen" id="screen-almanac">
@@ -855,15 +868,23 @@ body{
     <div class="dict-mode-toggle">
       <button class="dict-mode-btn active" id="dictModeWord" onclick="dictSetMode('word')">📖 詞語／成語</button>
       <button class="dict-mode-btn" id="dictModeChar" onclick="dictSetMode('char')">🔤 生字批次查詢</button>
+      <button class="dict-mode-btn" id="dictModeBulk" onclick="dictSetMode('bulk')">📥 整份課本匯入</button>
     </div>
 
-    <div class="dict-sticky-bar">
+    <div class="dict-sticky-bar" id="dictStickyBar">
       <input type="text" id="dictInput" placeholder="輸入成語或詞語，例如：守株待兔">
       <button class="dict-sticky-btn" onclick="dictLookup()">🔍 查詢</button>
     </div>
     <div class="grid-hint" id="dictModeHint" style="text-align:left; margin:-6px 0 10px;">查一個完整的詞語或成語</div>
 
-    <div class="dict-card">
+    <div class="dict-card" id="dictBulkCard" style="display:none;">
+      <div class="grid-hint" style="text-align:left; margin-bottom:8px;">貼上整份課文，格式：「第一課：課名」換行後接該課生字，可以連續貼很多課，會自動分課匯入收藏庫</div>
+      <textarea id="dictBulkInput" rows="8" style="width:100%; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:14px; font-family:inherit;" placeholder="第一課：蚊帳大使&#10;蚊帳洲瘧疾死叮鼓募集寄贈賣獎狀誌基潛&#10;第二課：從空中看臺灣&#10;德乎血攝颱錄哀巒縱臍禍殘檳榔鏟汙超抽"></textarea>
+      <button class="draw-card-btn" style="width:100%; margin-top:10px;" onclick="dictBulkImport()">開始匯入</button>
+      <div id="dictBulkStatus" class="grid-hint hidden" style="text-align:left; margin-top:10px;"></div>
+    </div>
+
+    <div class="dict-card" id="dictNormalCard">
       <div class="dict-form-row two">
         <select id="dictGrade">
           <option>一年級</option><option>二年級</option><option>三年級</option>
@@ -1777,8 +1798,8 @@ async function renderAlmanac(k){
   document.getElementById('am-conflict').innerHTML=`沖 <b>${ANIMALS[conflictZhi]}</b>　五行：<b>${nayin}</b>　今日值日：<b>${jc}</b>`;
   renderTagList('am-yi-list', JIANCHU_YI[jc]);
   renderTagList('am-ji-list', JIANCHU_JI[jc]);
-  document.getElementById('am-todo-title').textContent = isToday ? '📝 今天的待辦' : `📝 ${m}/${d} 的待辦`;
-  await renderTodoList('am-todo-list', dKey, 'am-todo-count');
+  document.getElementById('am-todo-title').textContent = isToday ? '📝 新增待辦（今天）' : `📝 新增待辦（${m}/${d}）`;
+  await renderAllTodoCompact();
 }
 function renderTagList(elId, text){
   const items=text.split('、');
@@ -1793,7 +1814,7 @@ async function selectedDayAddTodo(){
   list.push({id:Date.now()+'', text, done:false});
   await storeSet(key,list);
   input.value='';
-  await renderTodoList('am-todo-list', state.selectedDate, 'am-todo-count');
+  await renderAllTodoCompact();
   renderCalendarDayMarkers();
 }
 
@@ -2068,6 +2089,32 @@ function addTodoToCalendar(dateStr, text){
 }
 
 /* ---------------- 待辦總覽／隨手記事 ---------------- */
+async function renderAllTodoCompact(){
+  const keys=(await storeListPrefix('todo:')).slice().sort();
+  const container=document.getElementById('am-todo-list');
+  if(!container) return;
+  let rows=[];
+  for(const k of keys){
+    const dateStr=k.replace('todo:','');
+    const list=(await storeGet(k))||[];
+    list.forEach(t=>rows.push({dateStr, ...t}));
+  }
+  const countEl=document.getElementById('am-todo-count');
+  if(countEl) countEl.textContent = rows.length? `共 ${rows.length} 筆` : '';
+  if(!rows.length){ container.innerHTML='<div class="empty-hint">目前還沒有任何待辦事項</div>'; return; }
+  container.innerHTML=rows.map(t=>{
+    const [,m,d]=t.dateStr.split('-');
+    const shortDate=`${parseInt(m)}/${parseInt(d)}`;
+    return `<div class="todo-compact-row">
+      <button class="todo-compact-chk" onclick="toggleAllTodosItem('${t.dateStr}','${t.id}')">${t.done?'✅':'⬜'}</button>
+      <span class="todo-compact-date">${shortDate}</span>
+      <span class="todo-compact-text" style="${t.done?'text-decoration:line-through;color:var(--ink-soft);':''}">${escapeHtml(t.text)}</span>
+      <button class="todo-compact-icon" onclick="openTodoEditModal('${t.dateStr}','${t.id}','${escapeAttr(t.text)}')">✏️</button>
+      <button class="todo-compact-icon" onclick="addTodoToCalendar('${t.dateStr}','${escapeAttr(t.text)}')">📅</button>
+      <button class="todo-compact-icon" onclick="deleteAllTodosItem('${t.dateStr}','${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
 async function renderAllTodosScreen(){
   await renderMemos();
   const keys=await storeListPrefix('todo:');
@@ -2101,7 +2148,7 @@ async function toggleAllTodosItem(dateStr,id){
   const item=list.find(t=>t.id===id);
   if(item) item.done=!item.done;
   await storeSet(key,list);
-  renderAllTodosScreen();
+  renderAllTodoCompact();
   renderCalendarDayMarkers();
 }
 async function deleteAllTodosItem(dateStr,id){
@@ -2109,7 +2156,7 @@ async function deleteAllTodosItem(dateStr,id){
   let list=(await storeGet(key))||[];
   list=list.filter(t=>t.id!==id);
   await storeSet(key,list);
-  renderAllTodosScreen();
+  renderAllTodoCompact();
   renderCalendarDayMarkers();
 }
 function attachSwipeHandlers(container){
@@ -2305,7 +2352,7 @@ function refreshTodoViews(dKey){
   const d=state.today;
   const homeKey=dateKey(d.getFullYear(),d.getMonth()+1,d.getDate());
   if(dKey===homeKey) renderTodoList('home-todo-list',dKey,'home-todo-count');
-  if(state.selectedDate===dKey) renderTodoList('am-todo-list',dKey,'am-todo-count');
+  renderAllTodoCompact();
   renderCalendarDayMarkers();
 }
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -2585,13 +2632,72 @@ async function doSearch(){
 const dictCache={};
 let dictMode='word';
 
+async function dictBulkImport(){
+  const raw=document.getElementById('dictBulkInput').value;
+  const grade=document.getElementById('dictGrade').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  let lessons=[]; let current=null;
+  for(const line of lines){
+    if(/^第.+課[:：]/.test(line)){ current={name:line, chars:''}; lessons.push(current); }
+    else if(current){ current.chars+=line; }
+  }
+  if(!lessons.length){ alert('沒有偵測到「第○課：課名」這種格式，請確認貼上的內容前面有課名標題'); return; }
+  const statusEl=document.getElementById('dictBulkStatus');
+  statusEl.classList.remove('hidden');
+  const lib=(await storeGet('dict:library'))||[];
+  let added=0, skipped=0, total=0;
+  const perLessonChars=lessons.map(lesson=>{
+    const chars=[...new Set([...lesson.chars].filter(ch=>/[\u4e00-\u9fff]/.test(ch)))];
+    total+=chars.length;
+    return {lesson, chars};
+  });
+  let done=0;
+  for(const {lesson, chars} of perLessonChars){
+    for(const ch of chars){
+      done++;
+      statusEl.textContent=`查詢中（${done}／${total}）：${lesson.name}　${ch}`;
+      if(dictIsCollected(lib,'vocab',ch)){ skipped++; continue; }
+      try{
+        const data=await dictFetchMoedict(ch);
+        const defs=dictMoeDefinitions(data);
+        const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
+        const radical=data.radical||'';
+        const examples=defs.map(d=>d.example).filter(Boolean);
+        const meaning=defs.map(d=>d.def).join('　');
+        const record={type:'vocab', char:data.title||ch, pinyin:bopomofo, radical, words:examples, sentence1:examples[0]||'', sentence2:examples[1]||'', grade, lesson:lesson.name};
+        lib.push(record);
+        added++;
+      }catch(e){ skipped++; }
+    }
+  }
+  await storeSet('dict:library', lib);
+  statusEl.textContent=`✅ 匯入完成！共 ${lessons.length} 課、新增 ${added} 個生字到收藏庫${skipped?`，略過 ${skipped} 個（已收藏過或查無資料）`:''}。可以到下面「收藏庫」用課次篩選查看。`;
+  dictRenderLibrary();
+}
 function dictSetMode(mode){
   dictMode=mode;
   document.getElementById('dictModeWord').classList.toggle('active', mode==='word');
   document.getElementById('dictModeChar').classList.toggle('active', mode==='char');
+  document.getElementById('dictModeBulk').classList.toggle('active', mode==='bulk');
   const input=document.getElementById('dictInput');
   const hint=document.getElementById('dictModeHint');
   const quickRow=document.getElementById('dictQuickRow');
+  const stickyBar=document.getElementById('dictStickyBar');
+  const bulkCard=document.getElementById('dictBulkCard');
+  const normalCard=document.getElementById('dictNormalCard');
+  const results=document.getElementById('dictResults');
+  if(mode==='bulk'){
+    stickyBar.style.display='none';
+    hint.style.display='none';
+    bulkCard.style.display='block';
+    normalCard.style.display='none';
+    results.innerHTML='';
+    return;
+  }
+  stickyBar.style.display='';
+  hint.style.display='';
+  bulkCard.style.display='none';
+  normalCard.style.display='block';
   if(mode==='word'){
     input.placeholder='輸入成語或詞語，例如：守株待兔';
     hint.textContent='查一個完整的詞語或成語';
