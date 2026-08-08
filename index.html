@@ -2082,10 +2082,8 @@ function addTodoToCalendar(dateStr, text){
   ].join('\r\n');
   const blob=new Blob([ics], {type:'text/calendar;charset=utf-8'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.target='_blank'; a.rel='noopener';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 8000);
+  window.location.href=url;
+  setTimeout(()=>URL.revokeObjectURL(url), 15000);
 }
 
 /* ---------------- 待辦總覽／隨手記事 ---------------- */
