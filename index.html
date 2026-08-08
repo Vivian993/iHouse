@@ -863,7 +863,7 @@ body{
       <h1 class="title-font">📖 成語字典</h1>
       <div style="width:38px;"></div>
     </div>
-    <div class="tape-label">輸入文字查詢，資料來源：教育部《國語辭典》（創用CC授權）</div>
+    <div class="tape-label">輸入文字查詢，優先使用教育部《國語辭典簡編本》（適合國小生），查無資料才會用完整版</div>
 
     <div class="dict-mode-toggle">
       <button class="dict-mode-btn active" id="dictModeWord" onclick="dictSetMode('word')">📖 詞語／成語</button>
@@ -2712,9 +2712,23 @@ function dictSetMode(mode){
 function dictQuickFill(val){
   document.getElementById('dictInput').value=val;
 }
-async function dictFetchMoedict(term){
-  const cacheKey='moe:'+term;
+async function dictFetchMoedict(term, preferSimple){
+  if(preferSimple===undefined) preferSimple=true;
+  const cacheKey=(preferSimple?'a:':'uni:')+term;
   if(dictCache[cacheKey]) return dictCache[cacheKey];
+  if(preferSimple){
+    try{
+      const res=await fetch('https://www.moedict.tw/a/'+encodeURIComponent(term)+'.json');
+      if(res.ok){
+        const data=await res.json();
+        if(data && data.heteronyms && data.heteronyms.length){
+          dictCache[cacheKey]=data;
+          return data;
+        }
+      }
+    }catch(e){ /* 簡編本查無資料，改用完整版 */ }
+    return dictFetchMoedict(term, false);
+  }
   const res=await fetch('https://www.moedict.tw/uni/'+encodeURIComponent(term));
   if(!res.ok) throw new Error('MOE_NOT_FOUND');
   const data=await res.json();
