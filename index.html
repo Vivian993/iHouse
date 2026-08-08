@@ -913,6 +913,8 @@ body{
         <div class="tape-label" style="margin:0;">🗂️ 收藏庫</div>
         <button class="dict-chip-btn" onclick="dictClearLibrary()">清空收藏</button>
       </div>
+      <button class="draw-card-btn" style="width:100%; margin-top:10px;" onclick="dictRefreshAllLibrary()">🔄 全部重新查詢（換成簡易字典內容）</button>
+      <div id="dictRefreshStatus" class="grid-hint hidden" style="text-align:left; margin-top:8px;"></div>
       <div class="dict-form-row" style="margin-top:10px;">
         <input type="text" id="dictFilterKeyword" placeholder="🔍 搜尋收藏（成語、生字、意思、課名都可以打）">
       </div>
@@ -1024,6 +1026,26 @@ body{
     <div id="action-sheet-title" style="font-size:15px; color:var(--ink-soft); margin-bottom:14px;"></div>
     <div id="action-sheet-buttons" style="display:flex; flex-direction:column; gap:10px;"></div>
     <button class="dict-chip-btn" style="width:100%; padding:12px 0; font-size:14.5px; margin-top:10px;" onclick="closeActionSheet(null)">取消</button>
+  </div>
+</div>
+
+<div class="modal-mask" id="dict-edit-modal" onclick="if(event.target===this) closeDictEditModal()">
+  <div class="modal-box" style="max-width:400px; margin:0 auto; border-radius:22px;">
+    <button class="modal-close" onclick="closeDictEditModal()">✕</button>
+    <h2 class="title-font" style="font-size:18px;margin-bottom:14px;" id="de-title">✎ 編輯</h2>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <input type="text" id="de-pinyin" placeholder="注音／拼音">
+      <div id="de-meaning-row">
+        <textarea id="de-meaning" rows="3" placeholder="意思" style="width:100%; border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-size:14px; font-family:inherit;"></textarea>
+        <input type="text" id="de-sentence" placeholder="例句" style="margin-top:10px;">
+      </div>
+      <div id="de-vocab-rows">
+        <input type="text" id="de-words" placeholder="語詞（用、分隔，例如：牆基、地基）">
+        <input type="text" id="de-sentence1" placeholder="造句 1" style="margin-top:10px;">
+        <input type="text" id="de-sentence2" placeholder="造句 2" style="margin-top:10px;">
+      </div>
+    </div>
+    <button class="draw-card-btn" style="width:100%; margin-top:16px;" onclick="dictSaveItemEdit()">儲存</button>
   </div>
 </div>
 
@@ -2926,16 +2948,123 @@ async function dictRenderLibrary(){
     const rows=arr.map(it=>{
       if(it.type==='idiom'){
         return `<div class="dict-lib-item"><span class="tag">成語</span><h4>${escapeHtml(it.idiom||'')}</h4>
-          <p>${escapeHtml(it.pinyin||'')}</p><p>${escapeHtml(it.meaning||'')}</p>
+          <p>${escapeHtml(it.pinyin||'')}</p><p>${escapeHtml(it.meaning||'')||'（無內容，可點✎手動補上）'}</p>
+          <button class="rm" style="right:60px;" onclick="dictRefetchItem(${it._idx})">🔄</button>
+          <button class="rm" style="right:34px;" onclick="dictOpenEditItemModal(${it._idx})">✎</button>
           <button class="rm" onclick="dictRemoveItem(${it._idx})">✕</button></div>`;
       }
       return `<div class="dict-lib-item"><span class="tag vocab">生字</span><h4>${escapeHtml(it.char||'')}</h4>
-        <p>${escapeHtml(it.pinyin||'')}　語詞：${(it.words||[]).join('、')}</p>
-        <p>造句：${escapeHtml(it.sentence1||'')}</p>
+        <p>${escapeHtml(it.pinyin||'')}　語詞：${(it.words||[]).join('、')||'（無）'}</p>
+        <p>造句：${escapeHtml(it.sentence1||'')||'（無內容，可點✎手動補上）'}</p>
+        <button class="rm" style="right:60px;" onclick="dictRefetchItem(${it._idx})">🔄</button>
+        <button class="rm" style="right:34px;" onclick="dictOpenEditItemModal(${it._idx})">✎</button>
         <button class="rm" onclick="dictRemoveItem(${it._idx})">✕</button></div>`;
     }).join('');
     return `<div class="dict-lib-group"><div class="dict-lib-group-title"><span>📖 ${escapeHtml(key)}</span><span class="cnt">共 ${arr.length} 筆</span></div>${rows}</div>`;
   }).join('');
+}
+async function dictRefetchItem(idx){
+  const lib=(await storeGet('dict:library'))||[];
+  const it=lib[idx];
+  if(!it) return;
+  const term = it.type==='idiom' ? it.idiom : it.char;
+  try{
+    const data=await dictFetchMoedict(term);
+    const defs=dictMoeDefinitions(data);
+    const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
+    if(it.type==='idiom'){
+      it.pinyin=bopomofo;
+      it.meaning=defs.map(d=>d.def).join('　');
+      it.sentence=(defs.find(d=>d.example)||{}).example || '';
+    }else{
+      const examples=defs.map(d=>d.example).filter(Boolean);
+      it.pinyin=bopomofo;
+      it.radical=data.radical||'';
+      it.words=examples;
+      it.sentence1=examples[0]||'';
+      it.sentence2=examples[1]||'';
+    }
+    await storeSet('dict:library', lib);
+    dictRenderLibrary();
+  }catch(e){
+    alert('查無這個字詞的資料，可以點✎手動輸入');
+  }
+}
+async function dictRefreshAllLibrary(){
+  const lib=(await storeGet('dict:library'))||[];
+  if(!lib.length){ alert('收藏庫目前是空的'); return; }
+  const ok=await showConfirm(`要用簡易字典重新查詢全部 ${lib.length} 筆收藏內容嗎？手動編輯過的內容也會被覆蓋。`,'開始重新查詢','取消');
+  if(!ok) return;
+  const statusEl=document.getElementById('dictRefreshStatus');
+  statusEl.classList.remove('hidden');
+  for(let i=0;i<lib.length;i++){
+    const it=lib[i];
+    const term = it.type==='idiom' ? it.idiom : it.char;
+    statusEl.textContent=`重新查詢中（${i+1}／${lib.length}）：${term}`;
+    try{
+      const data=await dictFetchMoedict(term);
+      const defs=dictMoeDefinitions(data);
+      const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
+      if(it.type==='idiom'){
+        it.pinyin=bopomofo;
+        it.meaning=defs.map(d=>d.def).join('　');
+        it.sentence=(defs.find(d=>d.example)||{}).example || '';
+      }else{
+        const examples=defs.map(d=>d.example).filter(Boolean);
+        it.pinyin=bopomofo;
+        it.radical=data.radical||'';
+        it.words=examples;
+        it.sentence1=examples[0]||'';
+        it.sentence2=examples[1]||'';
+      }
+    }catch(e){ /* 查無資料，保留原內容 */ }
+  }
+  await storeSet('dict:library', lib);
+  statusEl.textContent=`✅ 已完成，共重新查詢 ${lib.length} 筆。`;
+  dictRenderLibrary();
+}
+const state_dictEdit={idx:null};
+async function dictOpenEditItemModal(idx){
+  const lib=(await storeGet('dict:library'))||[];
+  const it=lib[idx];
+  if(!it) return;
+  state_dictEdit.idx=idx;
+  document.getElementById('de-title').textContent=`✎ 編輯「${it.type==='idiom'?it.idiom:it.char}」`;
+  document.getElementById('de-pinyin').value=it.pinyin||'';
+  const isIdiom=it.type==='idiom';
+  document.getElementById('de-meaning-row').style.display=isIdiom?'block':'none';
+  document.getElementById('de-vocab-rows').style.display=isIdiom?'none':'block';
+  if(isIdiom){
+    document.getElementById('de-meaning').value=it.meaning||'';
+    document.getElementById('de-sentence').value=it.sentence||'';
+  }else{
+    document.getElementById('de-words').value=(it.words||[]).join('、');
+    document.getElementById('de-sentence1').value=it.sentence1||'';
+    document.getElementById('de-sentence2').value=it.sentence2||'';
+  }
+  document.getElementById('dict-edit-modal').classList.add('show');
+}
+function closeDictEditModal(){
+  document.getElementById('dict-edit-modal').classList.remove('show');
+  state_dictEdit.idx=null;
+}
+async function dictSaveItemEdit(){
+  if(state_dictEdit.idx===null) return;
+  const lib=(await storeGet('dict:library'))||[];
+  const it=lib[state_dictEdit.idx];
+  if(!it) return;
+  it.pinyin=document.getElementById('de-pinyin').value.trim();
+  if(it.type==='idiom'){
+    it.meaning=document.getElementById('de-meaning').value.trim();
+    it.sentence=document.getElementById('de-sentence').value.trim();
+  }else{
+    it.words=document.getElementById('de-words').value.split('、').map(s=>s.trim()).filter(Boolean);
+    it.sentence1=document.getElementById('de-sentence1').value.trim();
+    it.sentence2=document.getElementById('de-sentence2').value.trim();
+  }
+  await storeSet('dict:library', lib);
+  closeDictEditModal();
+  dictRenderLibrary();
 }
 async function dictRemoveItem(idx){
   const lib=(await storeGet('dict:library'))||[];
