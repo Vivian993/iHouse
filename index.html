@@ -2884,7 +2884,7 @@ async function dictRenderLibrary(){
   // 動態填入課名選單（保留目前選取的值）
   const lessonSelect=document.getElementById('dictFilterLesson');
   const currentLessonVal=lessonSelect.value;
-  const lessons=[...new Set(lib.map(it=>it.lesson).filter(Boolean))].sort();
+  const lessons=[...new Set(lib.map(it=>it.lesson).filter(Boolean))];
   lessonSelect.innerHTML='<option value="">全部課次</option>'+lessons.map(l=>`<option value="${escapeAttr(l)}">${escapeHtml(l)}</option>`).join('');
   if(lessons.includes(currentLessonVal)) lessonSelect.value=currentLessonVal;
 
