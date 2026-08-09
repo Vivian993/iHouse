@@ -57,7 +57,19 @@ body{
   background:var(--paper); box-shadow:2px 0 14px rgba(90,74,76,0.10);
   display:flex; flex-direction:column; align-items:center;
   padding:16px 0 90px; gap:8px; overflow-y:auto; z-index:45;
+  transition:transform .25s ease;
 }
+.sidebar.collapsed{ transform:translateX(-100%); }
+.sidebar-toggle{
+  position:fixed; top:50%; left:76px; transform:translateY(-50%);
+  width:22px; height:52px; border:none; border-radius:0 12px 12px 0;
+  background:var(--paper); box-shadow:2px 0 10px rgba(90,74,76,0.14);
+  color:var(--ink-soft); font-size:14px; z-index:46; display:flex; align-items:center; justify-content:center;
+  transition:left .25s ease;
+}
+.app-shell.sidebar-collapsed .sidebar-toggle{ left:0; }
+.app-shell.sidebar-collapsed #app{ margin-left:0; }
+#app{ transition:margin-left .25s ease; }
 .side-item-wrap{position:relative; width:100%; display:flex; justify-content:center;}
 .side-item{
   display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none;
@@ -77,7 +89,7 @@ body{
   width:38px; height:38px; border-radius:14px; font-size:16px;
   display:flex; align-items:center; justify-content:center; color:var(--ink); flex:0 0 auto;
 }
-.topbar-title-group{display:flex; align-items:center; gap:8px; min-width:0;}
+.topbar-title-group{display:flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; overflow:hidden;}
 .calc-fab{
   position:fixed; top:16px; right:16px; z-index:55; width:46px; height:46px; border-radius:16px;
   border:none; background:linear-gradient(160deg,#F7D9DD,#F0C3CA); box-shadow:var(--shadow);
@@ -108,6 +120,7 @@ body{
 .home-topbar{ justify-content:center; text-align:center; padding-top:22px; padding-right:60px; }
 .topbar h1{
   font-size:25px; margin:0; font-weight:700; letter-spacing:.5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1 1 auto;
 }
 .topbar .sub{font-size:13.5px; color:var(--ink-soft); margin-top:2px;}
 .back-btn{
@@ -192,7 +205,9 @@ body{
 .sb-order-row .arrows button{border:none; background:#fff; width:28px; height:28px; border-radius:8px; font-size:13px; box-shadow:var(--shadow-sm);}
 .sb-order-row .arrows button:disabled{opacity:0.3;}
 .portal-embed-wrap{margin-bottom:16px; border-radius:18px; overflow:hidden; box-shadow:var(--shadow-sm); background:#fff;}
-.portal-embed-bar{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; background:var(--cream); font-size:12.5px; color:var(--ink-soft); font-weight:700;}
+.portal-embed-bar{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; background:var(--cream); font-size:12.5px; color:var(--ink-soft); font-weight:700; flex-wrap:wrap;}
+.portal-embed-bar #portal-embed-label{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:1 1 auto;}
+.portal-embed-bar .dict-chip-btn{white-space:nowrap; flex:0 0 auto;}
 .portal-embed-frame{width:100%; height:60vh; min-height:420px; border:none; display:block;}
 .todo-item{
   display:flex; align-items:center; gap:10px; background:#fff; border-radius:14px; padding:9px 12px;
@@ -528,6 +543,7 @@ body{
 .row-icon svg, .img-picker svg{width:20px; height:20px; color:var(--pink-deep);}
 .row-icon svg{width:19px; height:19px;}
 .add-form{display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:18px; padding:14px 16px; box-shadow:var(--shadow-sm); margin-bottom:16px;}
+.add-folder-toggle{display:block; margin:0 0 14px; padding:8px 14px; border:none; border-radius:14px; background:transparent; color:var(--pink-deep,#e85d8a); font-size:13px; font-weight:600; cursor:pointer;}
 .add-form .row{display:flex; gap:8px;}
 .add-form input{border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:15.5px; font-family:inherit; flex:1; min-width:0;}
 .add-form select{width:100%; border:1.5px solid var(--line); border-radius:12px; padding:11px 12px; font-size:15.5px; font-family:inherit; background:#fff; margin-bottom:10px;}
@@ -662,6 +678,7 @@ body{
   <div class="side-item-wrap"><button class="side-item" data-side="dict" data-icon-key="dict" onclick="go('dict')"><span class="ic ic-dict" id="sideicon-dict">📖</span><span>生字字典</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="endict" data-icon-key="endict" onclick="go('endict')"><span class="ic" id="sideicon-endict">🔤</span><span>中英字典</span></button></div>
 </nav>
+<button class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()">‹</button>
 
 <div id="app">
 
@@ -819,15 +836,16 @@ body{
     <div class="portal-embed-wrap hidden" id="portal-embed-wrap">
       <div class="portal-embed-bar">
         <span id="portal-embed-label">🔗 已嵌入外部工具</span>
-        <div style="display:flex; gap:6px;">
+        <div style="display:flex; gap:6px; flex:0 0 auto;">
           <button class="dict-chip-btn" onclick="openPortalEmbedInNewTab()">↗ 新分頁開啟</button>
           <button class="dict-chip-btn" onclick="openPortalEmbedModal()">⚙️ 設定</button>
         </div>
       </div>
       <iframe id="portal-embed-frame" class="portal-embed-frame"></iframe>
     </div>
-    <div class="tape-label" id="portal-tape">建立分類資料夾，內容更好找</div>
-    <div class="add-form">
+    <div class="tape-label hidden" id="portal-tape">建立分類資料夾，內容更好找</div>
+    <button type="button" class="add-folder-toggle" onclick="toggleFolderAddPanel()">＋ 新增分類</button>
+    <div class="add-form hidden" id="folder-add-panel">
       <div class="row">
         <button type="button" class="img-picker" id="folder-img-picker-btn" onclick="document.getElementById('folder-img-file').click()">🗂️</button>
         <input type="file" id="folder-img-file" accept="image/*" style="display:none" onchange="handleFolderImgSelect(event)">
@@ -1860,6 +1878,16 @@ async function handleFolderImgSelect(e){
   const dataUrl=await compressImage(file);
   state_folder_img.pending=dataUrl;
   document.getElementById('folder-img-picker-btn').innerHTML=`<img src="${dataUrl}">`;
+}
+function toggleSidebar(){
+  const shell=document.querySelector('.app-shell');
+  const collapsed=shell.classList.toggle('sidebar-collapsed');
+  document.getElementById('sidebar').classList.toggle('collapsed', collapsed);
+  document.getElementById('sidebar-toggle-btn').textContent = collapsed ? '›' : '‹';
+  try{ localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0'); }catch(e){}
+}
+function toggleFolderAddPanel(){
+  document.getElementById('folder-add-panel').classList.toggle('hidden');
 }
 async function addFolder(){
   const nameInput=document.getElementById('folder-name');
@@ -3566,6 +3594,13 @@ attachIMESafeInput('dictFilterKeyword', dictRenderLibrary);
 attachIMESafeInput('enFilterKeyword', enRenderLibrary);
 applySidebarOrder();
 setupSideItemLongPress();
+try{
+  if(localStorage.getItem('sidebarCollapsed')==='1'){
+    document.querySelector('.app-shell').classList.add('sidebar-collapsed');
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('sidebar-toggle-btn').textContent='›';
+  }
+}catch(e){}
 renderHome();
 </script>
 </body>
