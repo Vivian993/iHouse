@@ -2710,8 +2710,10 @@ async function applySidebarOrder(order){
 function setupSideItemLongPress(){
   document.querySelectorAll('.side-item[data-icon-key], .nav-btn[data-icon-key]').forEach(btn=>{
     const key=btn.getAttribute('data-icon-key');
-    let timer=null, longPressReady=false;
-    const start=()=>{
+    let timer=null, longPressReady=false, activePointerId=null;
+    const start=(e)=>{
+      if(activePointerId!==null) return;
+      activePointerId = e.pointerId!==undefined ? e.pointerId : 'mouse';
       longPressReady=false;
       timer=setTimeout(()=>{
         longPressReady=true;
@@ -2719,20 +2721,19 @@ function setupSideItemLongPress(){
         if(navigator.vibrate) navigator.vibrate(15);
       }, 550);
     };
-    const cancel=()=>{ if(timer){ clearTimeout(timer); timer=null; } btn.classList.remove('pressing'); };
+    const cancel=()=>{ if(timer){ clearTimeout(timer); timer=null; } btn.classList.remove('pressing'); activePointerId=null; };
     const finish=(e)=>{
+      const wasReady=longPressReady;
       cancel();
-      if(longPressReady){
+      if(wasReady){
         if(e && e.cancelable) e.preventDefault();
         openHomeIconActions(key);
       }
     };
-    btn.addEventListener('touchstart', start, {passive:true});
-    btn.addEventListener('touchend', finish);
-    btn.addEventListener('touchmove', cancel);
-    btn.addEventListener('mousedown', start);
-    btn.addEventListener('mouseup', finish);
-    btn.addEventListener('mouseleave', cancel);
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', finish);
+    btn.addEventListener('pointerleave', cancel);
+    btn.addEventListener('pointercancel', cancel);
     btn.addEventListener('click', (e)=>{
       if(longPressReady){ e.preventDefault(); e.stopPropagation(); longPressReady=false; }
     }, true);
@@ -3543,6 +3544,7 @@ async function enLookup(){
 let _enUtterance=null;
 function enSpeak(word){
   if(!window.speechSynthesis) return;
+  try{ if(typeof audioCtx!=='undefined' && audioCtx && audioCtx.state==='running'){ audioCtx.suspend().catch(()=>{}); } }catch(e){}
   try{
     window.speechSynthesis.cancel();
     _enUtterance=new SpeechSynthesisUtterance(word);
@@ -3552,15 +3554,20 @@ function enSpeak(word){
   }catch(e){}
 }
 let _enAudioEl=null;
-function enPlayAudio(url, word){
-  if(url){
-    try{
-      _enAudioEl=new Audio(url.startsWith('//')?('https:'+url):url);
-      _enAudioEl.play();
-    }catch(e){}
-  } else {
-    enSpeak(word);
-  }
+function enPlayAudio(url, word, btnEl){
+  const src = url
+    ? (url.startsWith('//')?('https:'+url):url)
+    : ('https://api.streamelements.com/kappa/v2/speech?voice=Brian&text='+encodeURIComponent(word));
+  const setLabel=(t)=>{ if(btnEl) btnEl.textContent=t; };
+  setLabel('⏳ 讀取中…');
+  try{
+    _enAudioEl=new Audio(src);
+    _enAudioEl.addEventListener('playing', ()=>setLabel('🔊 發音'), {once:true});
+    _enAudioEl.addEventListener('error', ()=>setLabel('⚠️ 播放失敗'), {once:true});
+    _enAudioEl.play().then(()=>{
+      setTimeout(()=>{ if(btnEl && btnEl.textContent==='⏳ 讀取中…') setLabel('🔊 發音'); }, 1500);
+    }).catch(()=>setLabel('⚠️ 播放失敗'));
+  }catch(e){ setLabel('⚠️ 播放失敗'); }
 }
 async function enRenderE2C(word){
   const resultEl=document.getElementById('enResult');
@@ -3577,7 +3584,7 @@ async function enRenderE2C(word){
       <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
         <h3 style="font-size:22px; margin:0;">${escapeHtml(record.word)}</h3>
         ${record.phonetic?`<span style="color:var(--ink-soft); font-size:14px;">${escapeHtml(record.phonetic)}</span>`:''}
-        <button class="dict-chip-btn" onclick="enPlayAudio(${record.audio?`'${record.audio}'`:'null'}, '${record.word.replace(/'/g,"\\'")}')">🔊 發音</button>
+        <button class="dict-chip-btn" onclick="enPlayAudio(${record.audio?`'${record.audio}'`:'null'}, '${record.word.replace(/'/g,"\\'")}', this)">🔊 發音</button>
       </div>
       ${record.zh?`<div style="font-size:19px; color:var(--pink-deep); font-weight:700; margin-top:6px;">${escapeHtml(record.zh)}</div>`:''}
       <button class="dict-collect-btn" style="margin-top:10px;" onclick="enToggleCollect(${JSON.stringify(record).replace(/"/g,'&quot;')}, this)">${await enIsCollected(record)?'✓ 已收藏':'＋ 加入'}</button>
@@ -3602,7 +3609,7 @@ async function enRenderC2E(text){
       <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:4px;">
         <h3 style="font-size:22px; margin:0; color:var(--pink-deep);">${escapeHtml(en)}</h3>
         ${record.phonetic?`<span style="color:var(--ink-soft); font-size:14px;">${escapeHtml(record.phonetic)}</span>`:''}
-        <button class="dict-chip-btn" onclick="enPlayAudio(${record.audio?`'${record.audio}'`:'null'}, '${record.word.replace(/'/g,"\\'")}')">🔊 發音</button>
+        <button class="dict-chip-btn" onclick="enPlayAudio(${record.audio?`'${record.audio}'`:'null'}, '${record.word.replace(/'/g,"\\'")}', this)">🔊 發音</button>
       </div>
       <button class="dict-collect-btn" style="margin-top:10px;" onclick="enToggleCollect(${JSON.stringify(record).replace(/"/g,'&quot;')}, this)">${await enIsCollected(record)?'✓ 已收藏':'＋ 加入'}</button>
     </div>
