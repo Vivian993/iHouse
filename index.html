@@ -185,6 +185,15 @@ body{
   background:rgba(255,255,255,0.25); color:#fff; font-size:12.5px; font-weight:700;
   padding:4px 12px; border-radius:999px; backdrop-filter:blur(2px);
 }
+.sb-order-row{display:flex; align-items:center; gap:10px; background:var(--cream); border-radius:14px; padding:8px 12px;}
+.sb-order-row .ic-preview{font-size:18px; flex:0 0 auto;}
+.sb-order-row .label{flex:1; font-size:14px;}
+.sb-order-row .arrows{display:flex; gap:4px;}
+.sb-order-row .arrows button{border:none; background:#fff; width:28px; height:28px; border-radius:8px; font-size:13px; box-shadow:var(--shadow-sm);}
+.sb-order-row .arrows button:disabled{opacity:0.3;}
+.portal-embed-wrap{margin-bottom:16px; border-radius:18px; overflow:hidden; box-shadow:var(--shadow-sm); background:#fff;}
+.portal-embed-bar{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; background:var(--cream); font-size:12.5px; color:var(--ink-soft); font-weight:700;}
+.portal-embed-frame{width:100%; height:60vh; min-height:420px; border:none; display:block;}
 .todo-item{
   display:flex; align-items:center; gap:10px; background:#fff; border-radius:14px; padding:9px 12px;
   box-shadow:var(--shadow-sm); font-size:15.5px;
@@ -650,7 +659,8 @@ body{
   <div class="side-item-wrap"><button class="side-item" data-side="portal-life" data-icon-key="life" onclick="openPortal('life')"><span class="ic ic-life" id="sideicon-life">🌐</span><span>網頁工具</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="portal-fav" data-icon-key="fav" onclick="openPortal('fav')"><span class="ic ic-fav" id="sideicon-fav">⭐</span><span>收藏</span></button></div>
   <div class="side-item-wrap"><button class="side-item" data-side="portal-phone" data-icon-key="phone" onclick="openPortal('phone')"><span class="ic ic-phone" id="sideicon-phone">📞</span><span>電話簿</span></button></div>
-  <div class="side-item-wrap"><button class="side-item" data-side="dict" data-icon-key="dict" onclick="go('dict')"><span class="ic ic-dict" id="sideicon-dict">📖</span><span>成語字典</span></button></div>
+  <div class="side-item-wrap"><button class="side-item" data-side="dict" data-icon-key="dict" onclick="go('dict')"><span class="ic ic-dict" id="sideicon-dict">📖</span><span>生字字典</span></button></div>
+  <div class="side-item-wrap"><button class="side-item" data-side="endict" data-icon-key="endict" onclick="go('endict')"><span class="ic" id="sideicon-endict">🔤</span><span>中英字典</span></button></div>
 </nav>
 
 <div id="app">
@@ -699,6 +709,8 @@ body{
     <div class="grid-hint">資料存在這台手機的瀏覽器裡，換手機或清除瀏覽器資料前，記得先匯出備份</div>
     <button class="backup-btn" style="width:100%; margin-top:10px;" onclick="checkStorageUsage()">📊 檢查目前儲存空間用量</button>
     <div class="grid-hint hidden" id="storage-usage-text" style="margin-top:8px;"></div>
+    <button class="backup-btn" style="width:100%; margin-top:10px;" onclick="openSidebarOrderModal()">🔀 調整左側選單順序</button>
+    <button class="backup-btn" style="width:100%; margin-top:10px;" onclick="openPortalMergeModal()">📦 把某個入口搬進另一個入口</button>
   </section>
 
   <!-- ================= 行事曆／黃曆（已拆分為兩個畫面） ================= -->
@@ -804,6 +816,16 @@ body{
       </div>
       <div style="width:38px;"></div>
     </div>
+    <div class="portal-embed-wrap hidden" id="portal-embed-wrap">
+      <div class="portal-embed-bar">
+        <span id="portal-embed-label">🔗 已嵌入外部工具</span>
+        <div style="display:flex; gap:6px;">
+          <button class="dict-chip-btn" onclick="openPortalEmbedInNewTab()">↗ 新分頁開啟</button>
+          <button class="dict-chip-btn" onclick="openPortalEmbedModal()">⚙️ 設定</button>
+        </div>
+      </div>
+      <iframe id="portal-embed-frame" class="portal-embed-frame"></iframe>
+    </div>
     <div class="tape-label" id="portal-tape">建立分類資料夾，內容更好找</div>
     <div class="add-form">
       <div class="row">
@@ -880,7 +902,7 @@ body{
   <section class="screen" id="screen-dict">
     <div class="topbar">
       <button class="back-btn" onclick="go('home')">←</button>
-      <h1 class="title-font">📖 成語字典</h1>
+      <h1 class="title-font">📖 生字字典</h1>
       <div style="width:38px;"></div>
     </div>
     <div class="tape-label">輸入文字查詢，優先使用教育部《國語辭典簡編本》（適合國小生），查無資料才會用完整版</div>
@@ -957,6 +979,37 @@ body{
       </div>
       <div id="dictLibrary" style="margin-top:12px;"></div>
     </div>
+  </section>
+
+  <!-- ================= 中英字典 ================= -->
+  <section class="screen" id="screen-endict">
+    <div class="topbar">
+      <button class="back-btn" onclick="go('home')">←</button>
+      <div class="topbar-title-group">
+        <h1 class="title-font">🔤 中英字典</h1>
+        <button class="header-search-btn" onclick="go('search')">🔍</button>
+      </div>
+      <div style="width:38px;"></div>
+    </div>
+
+    <div class="dict-mode-toggle">
+      <button class="dict-mode-btn active" id="enModeE2C" onclick="enSetMode('e2c')">🔤 查英文單字</button>
+      <button class="dict-mode-btn" id="enModeC2E" onclick="enSetMode('c2e')">🈶 中文查英文</button>
+    </div>
+
+    <div class="dict-sticky-bar">
+      <input type="text" id="enInput" placeholder="輸入英文單字，例如：apple">
+      <button class="dict-sticky-btn" onclick="enLookup()">🔍 查詢</button>
+    </div>
+    <div class="grid-hint" id="enModeHint" style="text-align:left; margin:-6px 0 10px;">查一個英文單字，會顯示中文意思、音標和發音</div>
+
+    <div id="enResult"></div>
+
+    <div class="tape-label" style="margin-top:22px;">🗂️ 收藏庫</div>
+    <div class="dict-form-row" style="margin-top:10px;">
+      <input type="text" id="enFilterKeyword" placeholder="🔍 搜尋收藏（英文或中文都可以打）">
+    </div>
+    <div id="enLibrary" style="margin-top:12px;"></div>
   </section>
 
 </div>
@@ -1046,6 +1099,60 @@ body{
     <div id="action-sheet-title" style="font-size:15px; color:var(--ink-soft); margin-bottom:14px;"></div>
     <div id="action-sheet-buttons" style="display:flex; flex-direction:column; gap:10px;"></div>
     <button class="dict-chip-btn" style="width:100%; padding:12px 0; font-size:14.5px; margin-top:10px;" onclick="closeActionSheet(null)">取消</button>
+  </div>
+</div>
+
+<div class="modal-mask" id="portal-embed-modal" onclick="if(event.target===this) closePortalEmbedModal()">
+  <div class="modal-box" style="max-width:380px; margin:0 auto; border-radius:22px;">
+    <button class="modal-close" onclick="closePortalEmbedModal()">✕</button>
+    <h2 class="title-font" style="font-size:18px;margin-bottom:6px;">⚙️ 嵌入外部工具</h2>
+    <div class="grid-hint" style="text-align:left; margin-bottom:14px;">貼上網址後，這個網頁會直接顯示在這個入口最上面，不用離開就能操作</div>
+    <input type="text" id="pe-label" placeholder="顯示名稱，例如：🔗 我的工具箱" style="margin-bottom:10px;">
+    <input type="text" id="pe-url" placeholder="https://...">
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <button class="draw-card-btn" style="flex:1;" onclick="savePortalEmbed()">儲存</button>
+      <button class="dict-chip-btn" style="flex:1;" onclick="removePortalEmbed()">移除嵌入</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="portal-merge-modal" onclick="if(event.target===this) closePortalMergeModal()">
+  <div class="modal-box" style="max-width:380px; margin:0 auto; border-radius:22px;">
+    <button class="modal-close" onclick="closePortalMergeModal()">✕</button>
+    <h2 class="title-font" style="font-size:18px;margin-bottom:6px;">📦 把某個入口搬進另一個入口</h2>
+    <div class="grid-hint" style="text-align:left; margin-bottom:14px;">會把來源入口裡的「所有」項目，整批變成目的地入口裡的一個新資料夾，來源會清空（原本的分類資料夾不受影響，還在原地，只是空的）。</div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <label style="font-size:13px; color:var(--ink-soft);">來源入口（要搬走的）
+        <select id="pm-source" style="width:100%; margin-top:4px;">
+          <option value="kids">👦 孩子學習</option>
+          <option value="me">👩 我的資料</option>
+          <option value="life">🌐 網頁工具</option>
+          <option value="fav">⭐ 收藏</option>
+          <option value="phone">📞 電話簿</option>
+        </select>
+      </label>
+      <label style="font-size:13px; color:var(--ink-soft);">目的地入口（要搬進去的）
+        <select id="pm-target" style="width:100%; margin-top:4px;">
+          <option value="me">👩 我的資料</option>
+          <option value="life">🌐 網頁工具</option>
+          <option value="fav">⭐ 收藏</option>
+          <option value="phone">📞 電話簿</option>
+          <option value="kids">👦 孩子學習</option>
+        </select>
+      </label>
+    </div>
+    <button class="draw-card-btn" style="width:100%; margin-top:16px;" onclick="confirmPortalMerge()">開始搬移</button>
+    <div class="grid-hint" id="pm-status" style="text-align:left; margin-top:10px;"></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="sidebar-order-modal" onclick="if(event.target===this) closeSidebarOrderModal()">
+  <div class="modal-box" style="max-width:380px; margin:0 auto; border-radius:22px;">
+    <button class="modal-close" onclick="closeSidebarOrderModal()">✕</button>
+    <h2 class="title-font" style="font-size:18px;margin-bottom:6px;">🔀 調整選單順序</h2>
+    <div class="grid-hint" style="text-align:left; margin-bottom:14px;">用 ▲▼ 調整每一項在左側選單的上下位置</div>
+    <div id="sidebar-order-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    <button class="draw-card-btn" style="width:100%; margin-top:16px;" onclick="saveSidebarOrder()">儲存</button>
   </div>
 </div>
 
@@ -1514,7 +1621,7 @@ function go(screen){
   document.querySelectorAll('.nav-btn, .side-item').forEach(b=>b.classList.remove('active'));
   const navBtn=document.querySelector('.nav-btn[data-nav="'+screen+'"]');
   if(navBtn) navBtn.classList.add('active');
-  const sideMap={calendar:'calendar', almanac:'almanac', alltodos:'alltodos', dict:'dict'};
+  const sideMap={calendar:'calendar', almanac:'almanac', alltodos:'alltodos', dict:'dict', endict:'endict'};
   const sideKey = sideMap[screen] || (screen==='portal' ? 'portal-'+state.currentPortal : null);
   if(sideKey){
     const sideBtn=document.querySelector('.side-item[data-side="'+sideKey+'"]');
@@ -1522,6 +1629,7 @@ function go(screen){
   }
   if(screen==='calendar') renderCalendar();
   if(screen==='almanac') renderAlmanac();
+  if(screen==='endict') enRenderLibrary();
   if(screen==='home') renderHome();
   if(screen==='alltodos') renderAllTodosScreen();
   if(screen==='dict'){ dictRenderLibrary(); }
@@ -1535,14 +1643,62 @@ const PORTAL_META={
   fav:{title:'⭐ 收藏', icon:'⭐', tape:'建立分類資料夾，內容更好找'},
   phone:{title:'📞 電話簿', icon:'📞', tape:'分類自己訂，例如家人、店家、醫生'},
 };
+const PORTAL_EMBED_DEFAULTS={ me:{url:'https://vivian993.github.io/hub/', label:'🔗 我的百寶箱'}, life:{url:'https://vivian993.github.io/hub/teacher-ai-toolbox/', label:'🔗 教學工具箱'} };
 async function openPortal(key){
   state.currentPortal=key;
   state.currentFolder=null;
   document.getElementById('portal-title').textContent=PORTAL_META[key].title;
   document.getElementById('portal-tape').textContent=PORTAL_META[key].tape;
   await ensureDefaultFolder(key);
+  await renderPortalEmbed(key);
   go('portal');
   await renderFolderList();
+}
+function getPortalEmbedConfig(key, stored){
+  if(stored && typeof stored==='object') return stored;
+  if(typeof stored==='string' && stored) return {url:stored, label:'🔗 已嵌入外部工具'};
+  return PORTAL_EMBED_DEFAULTS[key] || {url:'', label:''};
+}
+async function renderPortalEmbed(key){
+  const stored=await storeGet('embed:'+key);
+  const cfg=getPortalEmbedConfig(key, stored);
+  const wrap=document.getElementById('portal-embed-wrap');
+  const frame=document.getElementById('portal-embed-frame');
+  if(cfg.url){
+    wrap.classList.remove('hidden');
+    document.getElementById('portal-embed-label').textContent=cfg.label||'🔗 已嵌入外部工具';
+    if(frame.src!==cfg.url) frame.src=cfg.url;
+  }else{
+    wrap.classList.add('hidden');
+    frame.src='about:blank';
+  }
+}
+function openPortalEmbedModal(){
+  storeGet('embed:'+state.currentPortal).then(stored=>{
+    const cfg=getPortalEmbedConfig(state.currentPortal, stored);
+    document.getElementById('pe-url').value=cfg.url||'';
+    document.getElementById('pe-label').value=cfg.label||'';
+  });
+  document.getElementById('portal-embed-modal').classList.add('show');
+}
+function closePortalEmbedModal(){
+  document.getElementById('portal-embed-modal').classList.remove('show');
+}
+async function savePortalEmbed(){
+  const url=document.getElementById('pe-url').value.trim();
+  const label=document.getElementById('pe-label').value.trim()||'🔗 已嵌入外部工具';
+  await storeSet('embed:'+state.currentPortal, {url, label});
+  await renderPortalEmbed(state.currentPortal);
+  closePortalEmbedModal();
+}
+async function removePortalEmbed(){
+  await storeSet('embed:'+state.currentPortal, {url:'', label:''});
+  await renderPortalEmbed(state.currentPortal);
+  closePortalEmbedModal();
+}
+function openPortalEmbedInNewTab(){
+  const frame=document.getElementById('portal-embed-frame');
+  if(frame.src && frame.src!=='about:blank') window.open(frame.src,'_blank');
 }
 async function ensureDefaultFolder(key){
   const fKey='folders:'+key;
@@ -2346,7 +2502,7 @@ async function renderHome(){
 /* ---------------- 快速入口自訂圖片 ---------------- */
 let homeIconEditingKey=null;
 const HOME_ICON_DEFAULTS={
-  cal:'📅', almanac:'🏮', kids:'👦', me:'👩', life:'🌐', fav:'⭐', phone:'📞', alltodos:'📔', dict:'📖',
+  cal:'📅', almanac:'🏮', kids:'👦', me:'👩', life:'🌐', fav:'⭐', phone:'📞', alltodos:'📔', dict:'📖', endict:'🔤',
   navhome:'🏠', navcalc:'🧮'
 };
 const HOME_ICON_ELID={ navhome:'navicon-home', navcalc:'navicon-calculator' };
@@ -2381,11 +2537,85 @@ function applyHomeIconImage(key,dataUrl){
   el.textContent='';
 }
 async function loadHomeIconImages(){
-  const keys=['cal','almanac','kids','me','life','fav','phone','alltodos','dict','navhome','navcalc'];
+  const keys=['cal','almanac','kids','me','life','fav','phone','alltodos','dict','endict','navhome','navcalc'];
   for(const k of keys){
     const dataUrl=await storeGet('homeicon:'+k);
     if(dataUrl) applyHomeIconImage(k, dataUrl);
   }
+}
+let state_sbOrder=[];
+function openPortalMergeModal(){
+  document.getElementById('pm-status').textContent='';
+  document.getElementById('portal-merge-modal').classList.add('show');
+}
+function closePortalMergeModal(){
+  document.getElementById('portal-merge-modal').classList.remove('show');
+}
+async function confirmPortalMerge(){
+  const source=document.getElementById('pm-source').value;
+  const target=document.getElementById('pm-target').value;
+  const statusEl=document.getElementById('pm-status');
+  if(source===target){ statusEl.textContent='來源跟目的地不能選同一個入口喔'; return; }
+  const sourceItems=(await storeGet('portal:'+source))||[];
+  if(!sourceItems.length){ statusEl.textContent=`「${PORTAL_META[source].title}」目前是空的，沒有東西可以搬`; return; }
+  const ok=await showConfirm(`確定要把「${PORTAL_META[source].title}」裡全部 ${sourceItems.length} 筆項目，搬進「${PORTAL_META[target].title}」變成一個新資料夾嗎？`,'開始搬移','取消');
+  if(!ok) return;
+  await ensureDefaultFolder(target);
+  const targetFolders=(await storeGet('folders:'+target))||[];
+  const newFolderId='merged-'+source+'-'+Date.now();
+  targetFolders.push({id:newFolderId, name:PORTAL_META[source].title.replace(/^\S+\s/,'')||source, emoji:PORTAL_META[source].icon, img:null});
+  await storeSet('folders:'+target, targetFolders);
+  const targetItems=(await storeGet('portal:'+target))||[];
+  sourceItems.forEach(it=>{ it.folderId=newFolderId; targetItems.push(it); });
+  await storeSet('portal:'+target, targetItems);
+  await storeSet('portal:'+source, []);
+  statusEl.textContent=`✅ 已完成！${sourceItems.length} 筆項目現在都在「${PORTAL_META[target].title}」裡的新資料夾「${PORTAL_META[source].title.replace(/^\S+\s/,'')}」了。`;
+}
+function openSidebarOrderModal(){
+  const items=[...document.querySelectorAll('#sidebar .side-item-wrap')];
+  state_sbOrder=items.map(wrap=>{
+    const btn=wrap.querySelector('.side-item');
+    return { side:btn.getAttribute('data-side'), label:btn.querySelector('span:last-child').textContent, icon:btn.querySelector('.ic').textContent||'🔘' };
+  });
+  renderSidebarOrderList();
+  document.getElementById('sidebar-order-modal').classList.add('show');
+}
+function closeSidebarOrderModal(){
+  document.getElementById('sidebar-order-modal').classList.remove('show');
+}
+function renderSidebarOrderList(){
+  const list=document.getElementById('sidebar-order-list');
+  list.innerHTML=state_sbOrder.map((it,i)=>`
+    <div class="sb-order-row">
+      <span class="ic-preview">${it.icon}</span>
+      <span class="label">${escapeHtml(it.label)}</span>
+      <div class="arrows">
+        <button onclick="moveSidebarItem(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button onclick="moveSidebarItem(${i},1)" ${i===state_sbOrder.length-1?'disabled':''}>▼</button>
+      </div>
+    </div>`).join('');
+}
+function moveSidebarItem(idx, dir){
+  const target=idx+dir;
+  if(target<0 || target>=state_sbOrder.length) return;
+  [state_sbOrder[idx], state_sbOrder[target]]=[state_sbOrder[target], state_sbOrder[idx]];
+  renderSidebarOrderList();
+}
+async function saveSidebarOrder(){
+  const order=state_sbOrder.map(it=>it.side);
+  await storeSet('sidebarOrder', order);
+  applySidebarOrder(order);
+  closeSidebarOrderModal();
+}
+async function applySidebarOrder(order){
+  order = order || await storeGet('sidebarOrder');
+  if(!order || !order.length) return;
+  const sidebar=document.getElementById('sidebar');
+  const wraps={};
+  [...sidebar.querySelectorAll('.side-item-wrap')].forEach(w=>{
+    wraps[w.querySelector('.side-item').getAttribute('data-side')]=w;
+  });
+  order.forEach(side=>{ if(wraps[side]) sidebar.appendChild(wraps[side]); });
 }
 function setupSideItemLongPress(){
   document.querySelectorAll('.side-item[data-icon-key], .nav-btn[data-icon-key]').forEach(btn=>{
@@ -3177,6 +3407,131 @@ async function dictClearLibrary(){
   dictRenderLibrary();
 }
 
+/* ---------------- 中英字典 ---------------- */
+let enMode='e2c';
+function enSetMode(mode){
+  enMode=mode;
+  document.getElementById('enModeE2C').classList.toggle('active', mode==='e2c');
+  document.getElementById('enModeC2E').classList.toggle('active', mode==='c2e');
+  const input=document.getElementById('enInput');
+  const hint=document.getElementById('enModeHint');
+  if(mode==='e2c'){
+    input.placeholder='輸入英文單字，例如：apple';
+    hint.textContent='查一個英文單字，會顯示中文意思、音標和發音';
+  }else{
+    input.placeholder='輸入中文詞，例如：蘋果';
+    hint.textContent='查中文詞，會翻譯成英文';
+  }
+  document.getElementById('enResult').innerHTML='';
+}
+async function enFetchDefinition(word){
+  const res=await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word));
+  if(!res.ok) throw new Error('EN_NOT_FOUND');
+  const data=await res.json();
+  if(!data || !data.length) throw new Error('EN_NOT_FOUND');
+  return data[0];
+}
+async function enFetchTranslate(text, from, to){
+  const res=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair='+from+'|'+to);
+  if(!res.ok) throw new Error('TRANSLATE_FAILED');
+  const data=await res.json();
+  if(!data || !data.responseData) throw new Error('TRANSLATE_FAILED');
+  return data.responseData.translatedText;
+}
+async function enLookup(){
+  const raw=document.getElementById('enInput').value.trim();
+  if(!raw){ alert(enMode==='e2c'?'請輸入英文單字':'請輸入中文詞'); return; }
+  const resultEl=document.getElementById('enResult');
+  resultEl.innerHTML='<div class="empty-hint">查詢中…</div>';
+  try{
+    if(enMode==='e2c'){ await enRenderE2C(raw.toLowerCase()); }
+    else{ await enRenderC2E(raw); }
+  }catch(e){
+    resultEl.innerHTML='<div class="empty-hint">查不到這個字詞，請確認拼字或用詞是否正確</div>';
+  }
+}
+async function enRenderE2C(word){
+  const resultEl=document.getElementById('enResult');
+  let entry=null, zh='';
+  try{ entry=await enFetchDefinition(word); }catch(e){}
+  try{ zh=await enFetchTranslate(word,'en','zh-TW'); }catch(e){}
+  if(!entry && !zh){ throw new Error('NOT_FOUND'); }
+  const phoneticObj=(entry && entry.phonetics||[]).find(p=>p.text) || {};
+  const audioObj=(entry && entry.phonetics||[]).find(p=>p.audio);
+  const meanings=(entry && entry.meanings||[]).slice(0,3);
+  const record={type:'e2c', word:(entry&&entry.word)||word, phonetic:phoneticObj.text||'', audio:(audioObj&&audioObj.audio)||'', zh,
+    meanings: meanings.map(m=>({pos:m.partOfSpeech, def:(m.definitions[0]||{}).definition||''}))};
+  const html=`<div class="dict-char-card">
+    <div style="flex:1;">
+      <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+        <h3 style="font-size:22px; margin:0;">${escapeHtml(record.word)}</h3>
+        ${record.phonetic?`<span style="color:var(--ink-soft); font-size:14px;">${escapeHtml(record.phonetic)}</span>`:''}
+        ${record.audio?`<button class="dict-chip-btn" onclick="new Audio('${record.audio}').play()">🔊 發音</button>`:''}
+      </div>
+      ${record.zh?`<div style="font-size:19px; color:var(--pink-deep); font-weight:700; margin-top:6px;">${escapeHtml(record.zh)}</div>`:''}
+      ${record.meanings.map(m=>`<div style="margin-top:8px; font-size:13.5px;"><b style="color:var(--mint-deep);">${escapeHtml(m.pos||'')}</b>　${escapeHtml(m.def)}</div>`).join('')}
+      <button class="dict-collect-btn" style="margin-top:10px;" onclick="enToggleCollect(${JSON.stringify(record).replace(/"/g,'&quot;')}, this)">${await enIsCollected(record)?'✓ 已收藏':'＋ 加入'}</button>
+    </div>
+  </div>`;
+  resultEl.innerHTML=html;
+}
+async function enRenderC2E(text){
+  const resultEl=document.getElementById('enResult');
+  const en=await enFetchTranslate(text,'zh-TW','en');
+  let bonus=null;
+  const singleWord=en.trim().split(/\s+/);
+  if(singleWord.length===1){
+    try{ bonus=await enFetchDefinition(singleWord[0].toLowerCase()); }catch(e){}
+  }
+  const phoneticObj=bonus ? (bonus.phonetics||[]).find(p=>p.text) : null;
+  const audioObj=bonus ? (bonus.phonetics||[]).find(p=>p.audio) : null;
+  const record={type:'c2e', zh:text, word:en, phonetic:phoneticObj?phoneticObj.text:'', audio:audioObj?audioObj.audio:'', meanings:[]};
+  const html=`<div class="dict-char-card">
+    <div style="flex:1;">
+      <div style="font-size:15px; color:var(--ink-soft);">${escapeHtml(text)}</div>
+      <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:4px;">
+        <h3 style="font-size:22px; margin:0; color:var(--pink-deep);">${escapeHtml(en)}</h3>
+        ${record.phonetic?`<span style="color:var(--ink-soft); font-size:14px;">${escapeHtml(record.phonetic)}</span>`:''}
+        ${record.audio?`<button class="dict-chip-btn" onclick="new Audio('${record.audio}').play()">🔊 發音</button>`:''}
+      </div>
+      <button class="dict-collect-btn" style="margin-top:10px;" onclick="enToggleCollect(${JSON.stringify(record).replace(/"/g,'&quot;')}, this)">${await enIsCollected(record)?'✓ 已收藏':'＋ 加入'}</button>
+    </div>
+  </div>`;
+  resultEl.innerHTML=html;
+}
+async function enIsCollected(record){
+  const lib=(await storeGet('endict:library'))||[];
+  return lib.some(it=>it.word.toLowerCase()===record.word.toLowerCase() && it.type===record.type);
+}
+async function enToggleCollect(record, btnEl){
+  const lib=(await storeGet('endict:library'))||[];
+  const idx=lib.findIndex(it=>it.word.toLowerCase()===record.word.toLowerCase() && it.type===record.type);
+  if(idx>-1){ lib.splice(idx,1); btnEl.textContent='＋ 加入'; btnEl.classList.remove('collected'); }
+  else{ lib.push(record); btnEl.textContent='✓ 已收藏'; btnEl.classList.add('collected'); }
+  await storeSet('endict:library', lib);
+  enRenderLibrary();
+}
+async function enRenderLibrary(){
+  const lib=(await storeGet('endict:library'))||[];
+  const kw=(document.getElementById('enFilterKeyword').value||'').trim().toLowerCase();
+  const container=document.getElementById('enLibrary');
+  let filtered=lib;
+  if(kw){ filtered=lib.filter(it=> it.word.toLowerCase().includes(kw) || (it.zh||'').includes(kw)); }
+  if(!filtered.length){ container.innerHTML='<div class="empty-hint">收藏庫是空的</div>'; return; }
+  container.innerHTML=filtered.map((it,idx)=>`<div class="dict-lib-item">
+    <span class="tag ${it.type==='c2e'?'vocab':''}">${it.type==='e2c'?'英→中':'中→英'}</span>
+    <h4>${escapeHtml(it.word)}</h4>
+    <p>${it.phonetic?escapeHtml(it.phonetic)+'　':''}${escapeHtml(it.zh||'')}</p>
+    <button class="rm" onclick="enRemoveItem(${idx})">✕</button>
+  </div>`).join('');
+}
+async function enRemoveItem(idx){
+  const lib=(await storeGet('endict:library'))||[];
+  lib.splice(idx,1);
+  await storeSet('endict:library', lib);
+  enRenderLibrary();
+}
+
 /* ---------------- 啟動 ---------------- */
 /* ---------------- 頂部日期時間列 ---------------- */
 function updateGlobalClock(){
@@ -3208,6 +3563,8 @@ setInterval(updateGlobalClock, 15000);
 
 attachIMESafeInput('search-input', doSearch);
 attachIMESafeInput('dictFilterKeyword', dictRenderLibrary);
+attachIMESafeInput('enFilterKeyword', enRenderLibrary);
+applySidebarOrder();
 setupSideItemLongPress();
 renderHome();
 </script>
