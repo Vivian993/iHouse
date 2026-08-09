@@ -3543,15 +3543,13 @@ async function enLookup(){
 let _enUtterance=null;
 function enSpeak(word){
   if(!window.speechSynthesis) return;
-  try{ window.speechSynthesis.cancel(); }catch(e){}
-  setTimeout(()=>{
-    try{
-      _enUtterance=new SpeechSynthesisUtterance(word);
-      _enUtterance.lang='en-US';
-      _enUtterance.rate=0.9;
-      window.speechSynthesis.speak(_enUtterance);
-    }catch(e){}
-  }, 80);
+  try{
+    window.speechSynthesis.cancel();
+    _enUtterance=new SpeechSynthesisUtterance(word);
+    _enUtterance.lang='en-US';
+    _enUtterance.rate=0.9;
+    window.speechSynthesis.speak(_enUtterance);
+  }catch(e){}
 }
 let _enAudioEl=null;
 function enPlayAudio(url, word){
