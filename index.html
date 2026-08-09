@@ -3555,19 +3555,32 @@ function enSpeak(word){
 }
 let _enAudioEl=null;
 function enPlayAudio(url, word, btnEl){
-  const src = url
-    ? (url.startsWith('//')?('https:'+url):url)
-    : ('https://api.streamelements.com/kappa/v2/speech?voice=Brian&text='+encodeURIComponent(word));
   const setLabel=(t)=>{ if(btnEl) btnEl.textContent=t; };
-  setLabel('⏳ 讀取中…');
+  setLabel('⏳ 發音中…');
+
+  // 方法一：字典錄音檔案（如果有的話）
+  const src = url ? (url.startsWith('//')?('https:'+url):url) : null;
+  if(src){
+    try{
+      _enAudioEl=new Audio(src);
+      _enAudioEl.addEventListener('playing', ()=>setLabel('🔊 發音（真人錄音）'), {once:true});
+      _enAudioEl.play().catch(()=>{});
+    }catch(e){}
+  }
+
+  // 方法二：手機內建朗讀（跟方法一同時、同步觸發，不互相等待）
   try{
-    _enAudioEl=new Audio(src);
-    _enAudioEl.addEventListener('playing', ()=>setLabel('🔊 發音'), {once:true});
-    _enAudioEl.addEventListener('error', ()=>setLabel('⚠️ 播放失敗'), {once:true});
-    _enAudioEl.play().then(()=>{
-      setTimeout(()=>{ if(btnEl && btnEl.textContent==='⏳ 讀取中…') setLabel('🔊 發音'); }, 1500);
-    }).catch(()=>setLabel('⚠️ 播放失敗'));
-  }catch(e){ setLabel('⚠️ 播放失敗'); }
+    if(window.speechSynthesis){
+      window.speechSynthesis.cancel();
+      _enUtterance=new SpeechSynthesisUtterance(word);
+      _enUtterance.lang='en-US';
+      _enUtterance.rate=0.9;
+      _enUtterance.addEventListener('start', ()=>setLabel('🔊 發音（手機朗讀）'), {once:true});
+      window.speechSynthesis.speak(_enUtterance);
+    }
+  }catch(e){}
+
+  setTimeout(()=>{ if(btnEl && btnEl.textContent==='⏳ 發音中…') setLabel('⚠️ 沒有聲音，請截圖給我看'); }, 1800);
 }
 async function enRenderE2C(word){
   const resultEl=document.getElementById('enResult');
