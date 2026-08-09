@@ -3553,12 +3553,11 @@ function enSpeak(word){
 }
 let _enAudioEl=null;
 function enPlayAudio(url, word){
-  if(url){
-    _enAudioEl=new Audio(url.startsWith('//')?('https:'+url):url);
-    _enAudioEl.play().catch(()=>enSpeak(word));
-  } else {
-    enSpeak(word);
-  }
+  const src = url
+    ? (url.startsWith('//')?('https:'+url):url)
+    : ('https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(word)+'&tl=en&client=tw-ob');
+  _enAudioEl=new Audio(src);
+  _enAudioEl.play().catch(()=>{ enSpeak(word); });
 }
 async function enRenderE2C(word){
   const resultEl=document.getElementById('enResult');
