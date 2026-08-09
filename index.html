@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#FBF0EE">
+<meta name="theme-color" content="#FAF6EF">
 <!-- 📌 iPhone 桌面 App 圖示：它會去抓您上傳到 GitHub 的 custom-icon.png 照片 -->
 <link rel="apple-touch-icon" href="custom-icon.png">
 <link rel="icon" type="image/png" href="custom-icon.png">
@@ -12,26 +12,26 @@
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --cream:#FBF0EE;
-  --paper:#FFFAF8;
-  --pink:#F0AAB4;
-  --pink-deep:#E08B98;
-  --mint:#A8C3AE;
-  --mint-deep:#84A88C;
-  --yellow:#E8C48B;
-  --red:#D6707A;
-  --blue:#A6BDD4;
-  --blue-deep:#7FA0BF;
-  --ink:#5A4A4C;
-  --ink-soft:#9C8A8C;
-  --line:#F0DFE0;
-  --header:#E0728A;
-  --shadow: 0 8px 24px rgba(90,74,76,0.10);
-  --shadow-sm: 0 3px 10px rgba(90,74,76,0.08);
+  --cream:#FAF6EF;
+  --paper:#FFFDF8;
+  --pink:#B9A6D9;
+  --pink-deep:#9483BE;
+  --mint:#B9CBB0;
+  --mint-deep:#8FAE93;
+  --yellow:#E4CB93;
+  --red:#C6899A;
+  --blue:#ACB9D9;
+  --blue-deep:#8291BC;
+  --ink:#55494C;
+  --ink-soft:#998C97;
+  --line:#EBE2E9;
+  --header:#8B76B0;
+  --shadow: 0 8px 24px rgba(85,73,76,0.10);
+  --shadow-sm: 0 3px 10px rgba(85,73,76,0.08);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 .hidden{display:none !important;}
-html{height:100%; background:#FBF0EE;}
+html{height:100%; background:#FAF6EF;}
 body{height:100%;}
 body{
   margin:0;
@@ -92,7 +92,7 @@ body{
 .topbar-title-group{display:flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; overflow:hidden;}
 .calc-fab{
   position:fixed; top:16px; right:16px; z-index:55; width:46px; height:46px; border-radius:16px;
-  border:none; background:linear-gradient(160deg,#F7D9DD,#F0C3CA); box-shadow:var(--shadow);
+  border:none; background:linear-gradient(160deg,#EBE1F4,#DCCBEC); box-shadow:var(--shadow);
   font-size:22px; display:flex; align-items:center; justify-content:center;
 }
 .calc-popover-box{ max-width:340px; margin:0 auto; border-radius:24px; }
@@ -188,7 +188,7 @@ body{
 .todo-compact-icon{border:none; background:none; font-size:13px; flex:0 0 auto; padding:2px; line-height:1; opacity:0.75;}
 .todo-compact-icon.cal-added{opacity:1;}
 .cal-big-clock{
-  text-align:center; background:linear-gradient(135deg,#F0AAB4,#A6BDD4); border-radius:18px; padding:16px 10px 18px;
+  text-align:center; background:linear-gradient(135deg,#B9A6D9,#ACB9D9); border-radius:18px; padding:16px 10px 18px;
   margin-bottom:16px; box-shadow:var(--shadow-sm);
 }
 .cal-big-clock-date{color:#fff; font-family:'ZCOOL KuaiLe',cursive; font-size:20px; text-shadow:0 1px 2px rgba(0,0,0,0.12);}
@@ -247,7 +247,7 @@ body{
   border:1.5px solid var(--line); background:#fff; color:var(--ink-soft); font-family:inherit;
   font-size:13px; padding:9px 16px; border-radius:999px; box-shadow:var(--shadow-sm);
 }
-.ic-cal{background-color:#F6DDE1;}
+.ic-cal{background-color:#E9E1F2;}
 .ic-calc{background-color:#DCEADD;}
 .ic-kid{background-color:#F5E6C8;}
 .ic-me{background-color:#E5DCE8;}
@@ -255,7 +255,7 @@ body{
 .ic-fav{background-color:#F6E2D3;}
 .ic-phone{background-color:#DCE6EE;}
 .ic-search{background-color:#F0E8E6;}
-.ic-cards{background-color:#F6DCE0;}
+.ic-cards{background-color:#ECE3F5;}
 .ic-alltodos{background-color:#E3EBDA;}
 .ic-dict{background-color:#EAD9C4;}
 
@@ -275,7 +275,7 @@ body{
 .day-cell .ld{font-size:10px; color:var(--ink-soft); white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
 .day-cell.red .sd, .day-cell.red .ld{color:var(--red);}
 .day-cell.today{border:2px solid var(--pink-deep);}
-.day-cell.selected{background:linear-gradient(160deg,#F0C3CA,#F7D9DD); box-shadow:0 0 0 2px var(--pink-deep) inset;}
+.day-cell.selected{background:linear-gradient(160deg,#DCCBEC,#EBE1F4); box-shadow:0 0 0 2px var(--pink-deep) inset;}
 .day-cell.selected .sd, .day-cell.selected .ld{color:#fff;}
 .day-cell.selected.red .sd, .day-cell.selected.red .ld{color:#fff;}
 .day-cell.day-off{background:linear-gradient(160deg,#FCE7D6,#F8D9C4);}
@@ -409,7 +409,7 @@ body{
 
 /* ---------- calculator ---------- */
 .calc-display{
-  background:linear-gradient(160deg,#F7D9DD,#F0C3CA); color:var(--ink); border-radius:20px; padding:28px 22px; text-align:right;
+  background:linear-gradient(160deg,#EBE1F4,#DCCBEC); color:var(--ink); border-radius:20px; padding:28px 22px; text-align:right;
   font-size:48px; font-weight:700; margin-bottom:14px; word-break:break-all; box-shadow:var(--shadow);
 }
 .calc-display .expr{font-size:16px; color:var(--pink-deep); min-height:20px;}
@@ -630,11 +630,11 @@ body{
 .dict-char-card .dcc-not-found{font-size:13px; color:var(--ink-soft); font-style:italic;}
 .dict-result-card{background:#fff; border-radius:20px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:14px;}
 .dict-result-head{
-  background:linear-gradient(160deg,#F7D9DD,#F0C3CA); padding:18px 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+  background:linear-gradient(160deg,#EBE1F4,#DCCBEC); padding:18px 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
 }
-.dict-result-meta{font-size:11px; color:#8a4a52; letter-spacing:.05em; font-weight:700;}
+.dict-result-meta{font-size:11px; color:#6f5d84; letter-spacing:.05em; font-weight:700;}
 .dict-result-title{font-family:'ZCOOL KuaiLe',cursive; font-size:26px; color:var(--ink); margin-top:2px;}
-.dict-result-pinyin{font-size:14px; color:#7a4a50; margin-top:4px;}
+.dict-result-pinyin{font-size:14px; color:#6b5a80; margin-top:4px;}
 .dict-save-btn{border:none; background:var(--mint-deep); color:#fff; font-size:12.5px; font-weight:700; padding:8px 14px; border-radius:12px; flex:0 0 auto;}
 .dict-result-body{padding:16px;}
 .dict-section-label{font-size:12px; font-weight:700; color:var(--pink-deep); text-transform:uppercase; letter-spacing:.05em; margin:14px 0 8px;}
@@ -1779,7 +1779,7 @@ async function renderFolderList(){
           ? (it.phone ? `window.location.href='tel:${escapeAttr(it.phone)}'` : `openPortalLink(event,'${escapeAttr(it.url||'')}')`)
           : `openPortalLink(event,'${escapeAttr(it.url||'')}')`;
         return `<div class="folder-card" onclick="${clickAction}">
-          <button class="fc-more" style="color:#e0607a;" onclick="event.stopPropagation();toggleFavFrom('${pk}','${it.id}')">💔</button>
+          <button class="fc-more" style="color:var(--red);" onclick="event.stopPropagation();toggleFavFrom('${pk}','${it.id}')">💔</button>
           <div class="fc-emoji">${iconHtml}</div>
           <div class="fc-name">${escapeHtml(it.name)}</div>
           <div class="fc-count">${PORTAL_META[pk].title}</div>
@@ -2950,7 +2950,7 @@ async function renderPortalList(){
       ? (it.phone ? `window.location.href='tel:${escapeAttr(it.phone)}'` : '')
       : `openPortalLink(event,'${escapeAttr(it.url||'')}')`;
     const favBtn = state.currentPortal!=='fav'
-      ? `<button class="row-edit" style="color:${it.isFav?'#e0607a':'var(--ink-soft)'};" onclick="event.stopPropagation();toggleItemFav('${it.id}')">${it.isFav?'❤️':'🤍'}</button>`
+      ? `<button class="row-edit" style="color:${it.isFav?'var(--red)':'var(--ink-soft)'};" onclick="event.stopPropagation();toggleItemFav('${it.id}')">${it.isFav?'❤️':'🤍'}</button>`
       : '';
     return `<div class="list-row" onclick="${clickAction}">
       <div class="row-icon ${it.img?'has-photo':''}">${iconHtml}</div>
@@ -3553,11 +3553,14 @@ function enSpeak(word){
 }
 let _enAudioEl=null;
 function enPlayAudio(url, word){
-  const src = url
-    ? (url.startsWith('//')?('https:'+url):url)
-    : ('https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(word)+'&tl=en&client=tw-ob');
-  _enAudioEl=new Audio(src);
-  _enAudioEl.play().catch(()=>{ enSpeak(word); });
+  if(url){
+    try{
+      _enAudioEl=new Audio(url.startsWith('//')?('https:'+url):url);
+      _enAudioEl.play();
+    }catch(e){}
+  } else {
+    enSpeak(word);
+  }
 }
 async function enRenderE2C(word){
   const resultEl=document.getElementById('enResult');
