@@ -173,6 +173,18 @@ body{
 }
 .todo-compact-text{flex:1; font-size:13.5px; color:var(--ink); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .todo-compact-icon{border:none; background:none; font-size:13px; flex:0 0 auto; padding:2px; line-height:1; opacity:0.75;}
+.todo-compact-icon.cal-added{opacity:1;}
+.cal-big-clock{
+  text-align:center; background:linear-gradient(135deg,#F0AAB4,#A6BDD4); border-radius:18px; padding:16px 10px 18px;
+  margin-bottom:16px; box-shadow:var(--shadow-sm);
+}
+.cal-big-clock-date{color:#fff; font-family:'ZCOOL KuaiLe',cursive; font-size:20px; text-shadow:0 1px 2px rgba(0,0,0,0.12);}
+.cal-big-clock-time{color:#fff; font-size:34px; font-weight:700; letter-spacing:.03em; margin-top:2px; text-shadow:0 1px 3px rgba(0,0,0,0.15);}
+.cal-big-clock-extra{margin-top:8px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;}
+.cal-big-clock-extra span{
+  background:rgba(255,255,255,0.25); color:#fff; font-size:12.5px; font-weight:700;
+  padding:4px 12px; border-radius:999px; backdrop-filter:blur(2px);
+}
 .todo-item{
   display:flex; align-items:center; gap:10px; background:#fff; border-radius:14px; padding:9px 12px;
   box-shadow:var(--shadow-sm); font-size:15.5px;
@@ -685,6 +697,8 @@ body{
       <input type="file" id="backup-import-file" accept="application/json" style="display:none" onchange="importBackupFile(event)">
     </div>
     <div class="grid-hint">資料存在這台手機的瀏覽器裡，換手機或清除瀏覽器資料前，記得先匯出備份</div>
+    <button class="backup-btn" style="width:100%; margin-top:10px;" onclick="checkStorageUsage()">📊 檢查目前儲存空間用量</button>
+    <div class="grid-hint hidden" id="storage-usage-text" style="margin-top:8px;"></div>
   </section>
 
   <!-- ================= 行事曆／黃曆（已拆分為兩個畫面） ================= -->
@@ -698,6 +712,12 @@ body{
       <div style="width:38px;"></div>
     </div>
 
+    <div class="cal-big-clock" id="cal-big-clock">
+      <div class="cal-big-clock-date" id="cal-big-clock-date"></div>
+      <div class="cal-big-clock-time" id="cal-big-clock-time"></div>
+      <div class="cal-big-clock-extra" id="cal-big-clock-extra"></div>
+    </div>
+
     <div class="cal-grid-section" id="cal-grid-section">
       <div class="cal-nav">
         <button onclick="changeMonth(-1)">‹</button>
@@ -708,7 +728,7 @@ body{
       <div class="day-grid" id="cal-grid"></div>
       <div class="legend">
         <span><i style="background:var(--red)"></i>初一／十五</span>
-        <span><i style="background:#F8D9C4"></i>放假日</span>
+        <span><i style="background:#F8D9C4"></i>節日</span>
         <span><i style="background:var(--mint-deep)"></i>有待辦</span>
       </div>
     </div>
@@ -1026,6 +1046,25 @@ body{
     <div id="action-sheet-title" style="font-size:15px; color:var(--ink-soft); margin-bottom:14px;"></div>
     <div id="action-sheet-buttons" style="display:flex; flex-direction:column; gap:10px;"></div>
     <button class="dict-chip-btn" style="width:100%; padding:12px 0; font-size:14.5px; margin-top:10px;" onclick="closeActionSheet(null)">取消</button>
+  </div>
+</div>
+
+<div class="modal-mask" id="cal-add-modal" onclick="if(event.target===this) closeCalendarAddModal()">
+  <div class="modal-box" style="max-width:360px; margin:0 auto; border-radius:22px;">
+    <button class="modal-close" onclick="closeCalendarAddModal()">✕</button>
+    <h2 class="title-font" style="font-size:18px;margin-bottom:6px;">📅 加入手機日曆</h2>
+    <div class="grid-hint" style="text-align:left; margin-bottom:14px;" id="ca-preview"></div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <label style="font-size:13px; color:var(--ink-soft);">要提醒的時間
+        <input type="time" id="ca-time" value="09:00" style="width:100%; margin-top:4px;">
+      </label>
+      <label style="font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="ca-allday" onchange="document.getElementById('ca-time').disabled=this.checked" style="width:auto;">
+        整天提醒（不指定時間）
+      </label>
+    </div>
+    <button class="draw-card-btn" style="width:100%; margin-top:16px;" onclick="confirmCalendarAdd()">加入日曆</button>
+    <div class="grid-hint" style="text-align:left; margin-top:10px;">按下後會跳出 iPhone 的「加入日曆」畫面，記得在那邊按確定才算真的加入喔</div>
   </div>
 </div>
 
@@ -1399,6 +1438,30 @@ async function storeListPrefix(prefix){
   }catch(e){ return []; }
 }
 /* 備份／還原：把所有資料匯出成一個 JSON 檔，之後可以匯入還原 */
+function checkStorageUsage(){
+  let totalBytes=0;
+  const byCategory={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k.startsWith(STORE_PREFIX)) continue;
+    const v=localStorage.getItem(k)||'';
+    const bytes=new Blob([k+v]).size;
+    totalBytes+=bytes;
+    const shortKey=k.replace(STORE_PREFIX,'').split(':')[0];
+    byCategory[shortKey]=(byCategory[shortKey]||0)+bytes;
+  }
+  const totalKB=(totalBytes/1024).toFixed(1);
+  const typicalLimitKB=5120; // 一般瀏覽器 localStorage 上限大約 5MB
+  const pct=Math.min(100, Math.round(totalBytes/1024/typicalLimitKB*100));
+  const sortedCats=Object.entries(byCategory).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const catLines=sortedCats.map(([k,v])=>`　・${k}：約 ${(v/1024).toFixed(1)} KB`).join('<br>');
+  let warning='';
+  if(pct>=80) warning='<br><br>⚠️ 已經用到快滿了，建議清一下不需要的照片或收藏內容，避免之後存不進去或變得卡頓。';
+  else if(pct>=50) warning='<br><br>目前用量還好，但已經過半，可以留意一下，尤其是自訂照片比較佔空間。';
+  document.getElementById('storage-usage-text').classList.remove('hidden');
+  document.getElementById('storage-usage-text').innerHTML=
+    `目前用了約 ${totalKB} KB（一般手機瀏覽器上限大約 5MB，約用了 ${pct}%）<br><br>用量最多的幾項：<br>${catLines}${warning}`;
+}
 function exportBackup(){
   const data={};
   for(let i=0;i<localStorage.length;i++){
@@ -2090,22 +2153,54 @@ function icsEscape(s){
 function icsNowStamp(){
   return new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
 }
-function addTodoToCalendar(dateStr, text){
+const state_ca={dateStr:null, id:null, text:null};
+function openCalendarAddModal(dateStr, id, text){
+  state_ca.dateStr=dateStr; state_ca.id=id; state_ca.text=text;
+  const [y,m,d]=dateStr.split('-');
+  document.getElementById('ca-preview').textContent=`${text}　（${parseInt(m)}/${parseInt(d)}）`;
+  document.getElementById('ca-allday').checked=false;
+  document.getElementById('ca-time').disabled=false;
+  document.getElementById('ca-time').value='09:00';
+  document.getElementById('cal-add-modal').classList.add('show');
+}
+function closeCalendarAddModal(){
+  document.getElementById('cal-add-modal').classList.remove('show');
+}
+async function confirmCalendarAdd(){
+  const {dateStr, id, text}=state_ca;
+  if(!dateStr) return;
+  const allDay=document.getElementById('ca-allday').checked;
   const dt=dateStr.replace(/-/g,'');
-  const ics=[
-    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//DigitalHome//TW','CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT',
+  let lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//DigitalHome//TW','CALSCALE:GREGORIAN','BEGIN:VEVENT',
     'UID:'+Date.now()+'-'+Math.random().toString(36).slice(2)+'@digitalhome',
-    'DTSTAMP:'+icsNowStamp(),
-    'DTSTART;VALUE=DATE:'+dt,
-    'SUMMARY:'+icsEscape(text),
-    'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:提醒','END:VALARM',
-    'END:VEVENT','END:VCALENDAR'
-  ].join('\r\n');
+    'DTSTAMP:'+icsNowStamp()];
+  if(allDay){
+    lines.push('DTSTART;VALUE=DATE:'+dt);
+    lines.push('SUMMARY:'+icsEscape(text));
+    lines.push('BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:提醒','END:VALARM');
+  }else{
+    const timeVal=document.getElementById('ca-time').value || '09:00';
+    const [hh,mm]=timeVal.split(':');
+    const startStr=dt+'T'+hh.padStart(2,'0')+mm.padStart(2,'0')+'00';
+    lines.push('DTSTART:'+startStr);
+    lines.push('DTEND:'+dt+'T'+hh.padStart(2,'0')+String((parseInt(mm,10)+30)%60).padStart(2,'0')+'00');
+    lines.push('SUMMARY:'+icsEscape(text));
+    lines.push('BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:提醒','END:VALARM');
+  }
+  lines.push('END:VEVENT','END:VCALENDAR');
+  const ics=lines.join('\r\n');
   const blob=new Blob([ics], {type:'text/calendar;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   window.location.href=url;
   setTimeout(()=>URL.revokeObjectURL(url), 15000);
+  if(id){
+    const key='todo:'+dateStr;
+    const list=(await storeGet(key))||[];
+    const item=list.find(t=>t.id===id);
+    if(item){ item.calAdded=true; await storeSet(key,list); }
+    renderAllTodoCompact();
+  }
+  closeCalendarAddModal();
 }
 
 /* ---------------- 待辦總覽／隨手記事 ---------------- */
@@ -2125,15 +2220,18 @@ async function renderAllTodoCompact(){
   container.innerHTML=rows.map(t=>{
     const [,m,d]=t.dateStr.split('-');
     const shortDate=`${parseInt(m)}/${parseInt(d)}`;
-    return `<div class="todo-compact-row">
-      <button class="todo-compact-chk" onclick="toggleAllTodosItem('${t.dateStr}','${t.id}')">${t.done?'✅':'⬜'}</button>
-      <span class="todo-compact-date">${shortDate}</span>
-      <span class="todo-compact-text" style="${t.done?'text-decoration:line-through;color:var(--ink-soft);':''}">${escapeHtml(t.text)}</span>
-      <button class="todo-compact-icon" onclick="openTodoEditModal('${t.dateStr}','${t.id}','${escapeAttr(t.text)}')">✏️</button>
-      <button class="todo-compact-icon" onclick="addTodoToCalendar('${t.dateStr}','${escapeAttr(t.text)}')">📅</button>
-      <button class="todo-compact-icon" onclick="deleteAllTodosItem('${t.dateStr}','${t.id}')">✕</button>
+    return `<div class="swipe-row">
+      <div class="swipe-delete-bg" onclick="deleteAllTodosItem('${t.dateStr}','${t.id}')">🗑️ 刪除</div>
+      <div class="swipe-content todo-compact-row">
+        <button class="todo-compact-chk" onclick="toggleAllTodosItem('${t.dateStr}','${t.id}')">${t.done?'✅':'⬜'}</button>
+        <span class="todo-compact-date">${shortDate}</span>
+        <span class="todo-compact-text" style="${t.done?'text-decoration:line-through;color:var(--ink-soft);':''}">${escapeHtml(t.text)}</span>
+        <button class="todo-compact-icon" onclick="openTodoEditModal('${t.dateStr}','${t.id}','${escapeAttr(t.text)}')">✏️</button>
+        <button class="todo-compact-icon ${t.calAdded?'cal-added':''}" onclick="openCalendarAddModal('${t.dateStr}','${t.id}','${escapeAttr(t.text)}')">${t.calAdded?'✅':'📅'}</button>
+      </div>
     </div>`;
   }).join('');
+  attachSwipeHandlers(container);
 }
 async function renderAllTodosScreen(){
   await renderMemos();
@@ -2154,7 +2252,7 @@ async function renderAllTodosScreen(){
           <div class="row-icon" onclick="toggleAllTodosItem('${dateStr}','${t.id}')">${t.done?'✅':'📝'}</div>
           <div class="row-text"><div class="row-title" style="${t.done?'text-decoration:line-through;color:var(--ink-soft);':''}">${escapeHtml(t.text)}</div></div>
           <button class="dict-collect-btn" style="flex:0 0 auto;background:var(--line);color:var(--ink-soft);" onclick="event.stopPropagation();openTodoEditModal('${dateStr}','${t.id}','${escapeAttr(t.text)}')">✏️</button>
-          <button class="dict-collect-btn" style="flex:0 0 auto;" onclick="event.stopPropagation();addTodoToCalendar('${dateStr}','${escapeAttr(t.text)}')">📅 加入日曆</button>
+          <button class="dict-collect-btn" style="flex:0 0 auto;" onclick="event.stopPropagation();openCalendarAddModal('${dateStr}','${t.id}','${escapeAttr(t.text)}')">${t.calAdded?'✅ 已加入':'📅 加入日曆'}</button>
         </div>
       </div>`).join('');
     html+='</div>';
@@ -2344,7 +2442,7 @@ async function renderTodoList(containerId, dKey, countId){
         <button class="chk" onclick="toggleTodo('${dKey}','${t.id}')">${t.done?'✓':''}</button>
         <div class="txt">${escapeHtml(t.text)}</div>
         <button class="del" style="background:none;border:none;font-size:15px;" onclick="openTodoEditModal('${dKey}','${t.id}','${escapeAttr(t.text)}')">✎</button>
-        <button class="del" style="background:none;border:none;font-size:15px;" onclick="addTodoToCalendar('${dKey}','${escapeAttr(t.text)}')">📅</button>
+        <button class="del" style="background:none;border:none;font-size:15px;" onclick="openCalendarAddModal('${dKey}','${t.id}','${escapeAttr(t.text)}')">${t.calAdded?'✅':'📅'}</button>
         <button class="del" onclick="deleteTodo('${dKey}','${t.id}')">✕</button>
       </div>`).join('');
   }
@@ -3087,6 +3185,23 @@ function updateGlobalClock(){
   const y=now.getFullYear(), m=now.getMonth()+1, d=now.getDate();
   const hh=String(now.getHours()).padStart(2,'0'), mm=String(now.getMinutes()).padStart(2,'0');
   document.getElementById('global-clock-text').textContent=`${y}年${m}月${d}日（週${weekNames[now.getDay()]}）　${hh}:${mm}`;
+  const bigDate=document.getElementById('cal-big-clock-date');
+  const bigTime=document.getElementById('cal-big-clock-time');
+  if(bigDate){ bigDate.textContent=`${y}年${m}月${d}日（週${weekNames[now.getDay()]}）`; }
+  if(bigTime){ bigTime.textContent=`${hh}:${mm}`; }
+  const extraEl=document.getElementById('cal-big-clock-extra');
+  if(extraEl){
+    let tags=[];
+    try{
+      const lunar=solar2lunar(y,m,d);
+      if(lunar && (lunar.lDay===1 || lunar.lDay===15)){
+        tags.push(`🌕 今天是農曆${lunar.lDay===1?'初一':'十五'}`);
+      }
+      const fests=getFestivalsFor(y,m,d);
+      fests.forEach(f=>{ tags.push(`${f.emoji||'🎉'} ${f.name}`); });
+    }catch(e){}
+    extraEl.innerHTML=tags.map(t=>`<span>${t}</span>`).join('');
+  }
 }
 updateGlobalClock();
 setInterval(updateGlobalClock, 15000);
