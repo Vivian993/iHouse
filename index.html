@@ -3540,20 +3540,24 @@ async function enLookup(){
     resultEl.innerHTML='<div class="empty-hint">查不到這個字詞，請確認拼字或用詞是否正確</div>';
   }
 }
+let _enUtterance=null;
 function enSpeak(word){
-  try{
-    if(window.speechSynthesis){
-      const u=new SpeechSynthesisUtterance(word);
-      u.lang='en-US';
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    }
-  }catch(e){}
+  if(!window.speechSynthesis) return;
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+  setTimeout(()=>{
+    try{
+      _enUtterance=new SpeechSynthesisUtterance(word);
+      _enUtterance.lang='en-US';
+      _enUtterance.rate=0.9;
+      window.speechSynthesis.speak(_enUtterance);
+    }catch(e){}
+  }, 80);
 }
+let _enAudioEl=null;
 function enPlayAudio(url, word){
   if(url){
-    const a=new Audio(url.startsWith('//')?('https:'+url):url);
-    a.play().catch(()=>enSpeak(word));
+    _enAudioEl=new Audio(url.startsWith('//')?('https:'+url):url);
+    _enAudioEl.play().catch(()=>enSpeak(word));
   } else {
     enSpeak(word);
   }
@@ -3681,6 +3685,12 @@ try{
   }
 }catch(e){}
 renderHome();
+try{
+  if(window.speechSynthesis){
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', ()=>window.speechSynthesis.getVoices());
+  }
+}catch(e){}
 </script>
 </body>
 </html>
