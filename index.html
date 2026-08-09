@@ -1120,6 +1120,14 @@ body{
   </div>
 </div>
 
+<div class="modal-mask" id="home-icon-actions-modal" onclick="if(event.target===this) closeHomeIconActions()">
+  <div class="modal-box" style="text-align:center; max-width:340px; margin:0 auto; border-radius:22px;">
+    <div style="font-size:15px; color:var(--ink-soft); margin-bottom:14px;">這個項目要做什麼？</div>
+    <div id="hia-buttons" style="display:flex; flex-direction:column; gap:10px;"></div>
+    <button class="dict-chip-btn" style="width:100%; padding:12px 0; font-size:14.5px; margin-top:10px;" onclick="closeHomeIconActions()">取消</button>
+  </div>
+</div>
+
 <div class="modal-mask" id="portal-embed-modal" onclick="if(event.target===this) closePortalEmbedModal()">
   <div class="modal-box" style="max-width:380px; margin:0 auto; border-radius:22px;">
     <button class="modal-close" onclick="closePortalEmbedModal()">✕</button>
@@ -2527,6 +2535,60 @@ async function renderHome(){
   loadHomeIconImages();
 }
 
+/* ---------------- 側欄圖示：改照片／改名稱 動作選單 ---------------- */
+let hiaEditingKey=null;
+function openHomeIconActions(key){
+  hiaEditingKey=key;
+  const hasPhoto = !!document.getElementById(HOME_ICON_ELID[key] || ('sideicon-'+key)).style.backgroundImage
+    && document.getElementById(HOME_ICON_ELID[key] || ('sideicon-'+key)).style.backgroundImage!=='none';
+  const btnRow=document.getElementById('hia-buttons');
+  btnRow.innerHTML=`
+    <button class="draw-card-btn" style="width:100%;" onclick="closeHomeIconActions(); homeIconEditingKey='${key}'; document.getElementById('home-icon-file').click();">📷 ${hasPhoto?'換照片':'選擇照片'}</button>
+    <button class="draw-card-btn" style="width:100%;" onclick="closeHomeIconActions(); promptRenameSideItem('${key}');">✏️ 改名稱</button>
+    ${hasPhoto?`<button class="dict-chip-btn" style="width:100%;color:var(--red);border-color:var(--red);" onclick="closeHomeIconActions(); removeHomeIconPhoto('${key}');">🗑️ 移除照片</button>`:''}
+  `;
+  document.getElementById('home-icon-actions-modal').classList.add('show');
+}
+function closeHomeIconActions(){
+  document.getElementById('home-icon-actions-modal').classList.remove('show');
+}
+function removeHomeIconPhoto(key){
+  localStorage.removeItem(STORE_PREFIX+'homeicon:'+key);
+  const el=document.getElementById(HOME_ICON_ELID[key] || ('sideicon-'+key));
+  if(el){ el.style.backgroundImage='none'; el.textContent=HOME_ICON_DEFAULTS[key]||'🙂'; }
+}
+function promptRenameSideItem(key){
+  const btn=document.querySelector('.side-item[data-icon-key="'+key+'"], .nav-btn[data-icon-key="'+key+'"]');
+  if(!btn) return;
+  const labelEl=btn.querySelector('span:last-child');
+  const current=labelEl ? labelEl.textContent : '';
+  const next=prompt('幫這個項目取個名字：', current);
+  if(next===null) return;
+  const trimmed=next.trim();
+  if(!trimmed) return;
+  applySideItemLabel(key, trimmed);
+  try{ localStorage.setItem(STORE_PREFIX+'sideLabel:'+key, trimmed); }catch(e){}
+}
+function applySideItemLabel(key, text){
+  document.querySelectorAll('.side-item[data-icon-key="'+key+'"] span:last-child, .nav-btn[data-icon-key="'+key+'"] span:last-child').forEach(el=>{ el.textContent=text; });
+  const portalKeyMap={kids:'kids', me:'me', life:'life', fav:'fav', phone:'phone'};
+  if(portalKeyMap[key] && PORTAL_META[key]){
+    const emoji=(PORTAL_META[key].title.match(/^\S+/)||[''])[0];
+    PORTAL_META[key].title = emoji + ' ' + text;
+    if(state.currentPortal===key){
+      const titleEl=document.getElementById('portal-title');
+      if(titleEl) titleEl.textContent=PORTAL_META[key].title;
+    }
+  }
+}
+async function loadSideItemLabels(){
+  const keys=['cal','almanac','kids','me','life','fav','phone','alltodos','dict','endict','navhome','navcalc'];
+  for(const k of keys){
+    const text=await storeGet('sideLabel:'+k);
+    if(text) applySideItemLabel(k, text);
+  }
+}
+
 /* ---------------- 快速入口自訂圖片 ---------------- */
 let homeIconEditingKey=null;
 const HOME_ICON_DEFAULTS={
@@ -2662,7 +2724,7 @@ function setupSideItemLongPress(){
       cancel();
       if(longPressReady){
         if(e && e.cancelable) e.preventDefault();
-        openHomeIconPicker(key);
+        openHomeIconActions(key);
       }
     };
     btn.addEventListener('touchstart', start, {passive:true});
@@ -3478,6 +3540,24 @@ async function enLookup(){
     resultEl.innerHTML='<div class="empty-hint">查不到這個字詞，請確認拼字或用詞是否正確</div>';
   }
 }
+function enSpeak(word){
+  try{
+    if(window.speechSynthesis){
+      const u=new SpeechSynthesisUtterance(word);
+      u.lang='en-US';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+  }catch(e){}
+}
+function enPlayAudio(url, word){
+  if(url){
+    const a=new Audio(url.startsWith('//')?('https:'+url):url);
+    a.play().catch(()=>enSpeak(word));
+  } else {
+    enSpeak(word);
+  }
+}
 async function enRenderE2C(word){
   const resultEl=document.getElementById('enResult');
   let entry=null, zh='';
@@ -3486,18 +3566,16 @@ async function enRenderE2C(word){
   if(!entry && !zh){ throw new Error('NOT_FOUND'); }
   const phoneticObj=(entry && entry.phonetics||[]).find(p=>p.text) || {};
   const audioObj=(entry && entry.phonetics||[]).find(p=>p.audio);
-  const meanings=(entry && entry.meanings||[]).slice(0,3);
   const record={type:'e2c', word:(entry&&entry.word)||word, phonetic:phoneticObj.text||'', audio:(audioObj&&audioObj.audio)||'', zh,
-    meanings: meanings.map(m=>({pos:m.partOfSpeech, def:(m.definitions[0]||{}).definition||''}))};
+    meanings: []};
   const html=`<div class="dict-char-card">
     <div style="flex:1;">
       <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
         <h3 style="font-size:22px; margin:0;">${escapeHtml(record.word)}</h3>
         ${record.phonetic?`<span style="color:var(--ink-soft); font-size:14px;">${escapeHtml(record.phonetic)}</span>`:''}
-        ${record.audio?`<button class="dict-chip-btn" onclick="new Audio('${record.audio}').play()">🔊 發音</button>`:''}
+        <button class="dict-chip-btn" onclick="enPlayAudio(${record.audio?`'${record.audio}'`:'null'}, '${record.word.replace(/'/g,"\\'")}')">🔊 發音</button>
       </div>
       ${record.zh?`<div style="font-size:19px; color:var(--pink-deep); font-weight:700; margin-top:6px;">${escapeHtml(record.zh)}</div>`:''}
-      ${record.meanings.map(m=>`<div style="margin-top:8px; font-size:13.5px;"><b style="color:var(--mint-deep);">${escapeHtml(m.pos||'')}</b>　${escapeHtml(m.def)}</div>`).join('')}
       <button class="dict-collect-btn" style="margin-top:10px;" onclick="enToggleCollect(${JSON.stringify(record).replace(/"/g,'&quot;')}, this)">${await enIsCollected(record)?'✓ 已收藏':'＋ 加入'}</button>
     </div>
   </div>`;
@@ -3520,7 +3598,7 @@ async function enRenderC2E(text){
       <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:4px;">
         <h3 style="font-size:22px; margin:0; color:var(--pink-deep);">${escapeHtml(en)}</h3>
         ${record.phonetic?`<span style="color:var(--ink-soft); font-size:14px;">${escapeHtml(record.phonetic)}</span>`:''}
-        ${record.audio?`<button class="dict-chip-btn" onclick="new Audio('${record.audio}').play()">🔊 發音</button>`:''}
+        <button class="dict-chip-btn" onclick="enPlayAudio(${record.audio?`'${record.audio}'`:'null'}, '${record.word.replace(/'/g,"\\'")}')">🔊 發音</button>
       </div>
       <button class="dict-collect-btn" style="margin-top:10px;" onclick="enToggleCollect(${JSON.stringify(record).replace(/"/g,'&quot;')}, this)">${await enIsCollected(record)?'✓ 已收藏':'＋ 加入'}</button>
     </div>
@@ -3594,6 +3672,7 @@ attachIMESafeInput('dictFilterKeyword', dictRenderLibrary);
 attachIMESafeInput('enFilterKeyword', enRenderLibrary);
 applySidebarOrder();
 setupSideItemLongPress();
+loadSideItemLabels();
 try{
   if(localStorage.getItem('sidebarCollapsed')==='1'){
     document.querySelector('.app-shell').classList.add('sidebar-collapsed');
