@@ -628,6 +628,9 @@ body{
 .dict-char-card .dcc-bopomofo{font-size:12.5px; color:var(--ink-soft);}
 .dict-char-card .dcc-meaning{font-size:13.5px; line-height:1.6; margin-top:4px;}
 .dict-char-card .dcc-not-found{font-size:13px; color:var(--ink-soft); font-style:italic;}
+.dcc-multi-reading-hint{font-size:12.5px; color:var(--pink-deep); font-weight:700; margin-bottom:6px;}
+.dcc-reading-group{background:var(--cream); border-radius:12px; padding:10px 12px; margin-bottom:8px;}
+.dcc-reading-tag{font-weight:700; color:var(--pink-deep); margin-bottom:2px;}
 .dict-result-card{background:#fff; border-radius:20px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:14px;}
 .dict-result-head{
   background:linear-gradient(160deg,#EBE1F4,#DCCBEC); padding:18px 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
@@ -3254,20 +3257,31 @@ async function dictRenderCharCard(ch){
   </div>`);
   try{
     const data=await dictFetchMoedict(ch);
-    const defs=dictMoeDefinitions(data);
-    const bopomofo=(data.heteronyms[0]||{}).bopomofo || (data.heteronyms[0]||{}).bopomofo2 || '';
+    const heteronyms=(data.heteronyms||[]).filter(h=>(h.definitions||[]).some(d=>d.def));
+    const groups=heteronyms.map(h=>{
+      const bopomofo=h.bopomofo || h.bopomofo2 || '';
+      const defs=(h.definitions||[]).filter(d=>d.def).map(d=>({type:d.type||'', def:d.def, example:(d.example&&d.example[0])||(d.quote&&d.quote[0])||''}));
+      return {bopomofo, defs};
+    });
+    const allExamples=groups.flatMap(g=>g.defs.map(d=>d.example)).filter(Boolean);
     const radical=data.radical||'';
-    const examples=defs.map(d=>d.example).filter(Boolean);
-    const meaning=defs.map(d=>d.def).join('　');
-    const record={type:'vocab', char:data.title||ch, pinyin:bopomofo, radical, words:examples, sentence1:examples[0]||'', sentence2:examples[1]||'', grade, lesson};
+    const primaryBopomofo=(groups[0]||{}).bopomofo||'';
+    const meaning=groups.flatMap(g=>g.defs.map(d=>d.def)).join('　');
+    const record={type:'vocab', char:data.title||ch, pinyin:groups.map(g=>g.bopomofo).filter(Boolean).join('、')||primaryBopomofo, radical, words:allExamples, sentence1:allExamples[0]||'', sentence2:allExamples[1]||'', grade, lesson};
     const lib=(await storeGet('dict:library'))||[];
     const collected=dictIsCollected(lib,'vocab',record.char);
     const el=document.getElementById(cardId);
-    el.querySelector('.dcc-body').innerHTML=`
-      <div class="dcc-bopomofo">${escapeHtml(bopomofo)}${radical?`　部首：${escapeHtml(radical)}`:''}</div>
-      <div class="dcc-meaning">${escapeHtml(meaning)||'查無詳細解釋'}</div>
-      ${examples.length?`<div class="dcc-meaning">例句／造詞：${examples.map(escapeHtml).join('；')}</div>`:''}
-    `;
+    const groupsHtml = groups.length>1
+      ? groups.map(g=>`<div class="dcc-reading-group">
+          <div class="dcc-bopomofo dcc-reading-tag">🔊 ${escapeHtml(g.bopomofo)}</div>
+          <div class="dcc-meaning">${g.defs.map(d=>`${d.type?`【${escapeHtml(d.type)}】`:''}${escapeHtml(d.def)}`).join('　')}</div>
+          ${g.defs.some(d=>d.example)?`<div class="dcc-meaning">例句／造詞：${g.defs.filter(d=>d.example).map(d=>escapeHtml(d.example)).join('；')}</div>`:''}
+        </div>`).join('')
+      : `<div class="dcc-bopomofo">${escapeHtml(primaryBopomofo)}${radical?`　部首：${escapeHtml(radical)}`:''}</div>
+         <div class="dcc-meaning">${escapeHtml(meaning)||'查無詳細解釋'}</div>
+         ${allExamples.length?`<div class="dcc-meaning">例句／造詞：${allExamples.map(escapeHtml).join('；')}</div>`:''}`;
+    el.querySelector('.dcc-body').innerHTML = (groups.length>1?`<div class="dcc-multi-reading-hint">這個字有 ${groups.length} 種讀音喔！</div>`:'') + groupsHtml
+      + (groups.length>1 && radical ? `<div class="dcc-meaning">部首：${escapeHtml(radical)}</div>` : '');
     el.insertAdjacentHTML('beforeend', `<button class="dict-collect-btn ${collected?'collected':''}" onclick='dictToggleCollect(${JSON.stringify(record)}, this)'>${collected?'✓ 已收藏':'＋ 加入'}</button>`);
   }catch(e){
     const el=document.getElementById(cardId);
@@ -3286,7 +3300,8 @@ async function dictOpenModal(char){
   try{
     const moe=await dictFetchMoedict(char);
     const defs=dictMoeDefinitions(moe);
-    const bopomofo=(moe.heteronyms[0]||{}).bopomofo || (moe.heteronyms[0]||{}).bopomofo2 || '';
+    const allBopomofo=(moe.heteronyms||[]).map(h=>h.bopomofo||h.bopomofo2||'').filter(Boolean);
+    const bopomofo=allBopomofo.join('、');
     const radical=moe.radical||'';
     const meaning=defs.map(d=>d.def).join('　');
     const words=defs.map(d=>d.example).filter(Boolean);
