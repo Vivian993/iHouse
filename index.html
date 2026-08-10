@@ -2570,7 +2570,7 @@ function promptRenameSideItem(key){
   const trimmed=next.trim();
   if(!trimmed) return;
   applySideItemLabel(key, trimmed);
-  try{ localStorage.setItem(STORE_PREFIX+'sideLabel:'+key, trimmed); }catch(e){}
+  storeSet('sideLabel:'+key, trimmed);
 }
 function applySideItemLabel(key, text){
   document.querySelectorAll('.side-item[data-icon-key="'+key+'"] span:last-child, .nav-btn[data-icon-key="'+key+'"] span:last-child').forEach(el=>{ el.textContent=text; });
@@ -2587,7 +2587,17 @@ function applySideItemLabel(key, text){
 async function loadSideItemLabels(){
   const keys=['cal','almanac','kids','me','life','fav','phone','alltodos','dict','endict','navhome','navcalc'];
   for(const k of keys){
-    const text=await storeGet('sideLabel:'+k);
+    let text=await storeGet('sideLabel:'+k);
+    if(!text){
+      // 搶救舊版本存壞的格式（純文字、沒有 JSON 編碼）
+      try{
+        const raw=localStorage.getItem(STORE_PREFIX+'sideLabel:'+k);
+        if(raw && raw.trim() && raw.trim()!=='null'){
+          text=raw;
+          storeSet('sideLabel:'+k, text); // 轉存成正確格式，以後就不會再讀丟
+        }
+      }catch(e){}
+    }
     if(text) applySideItemLabel(k, text);
   }
 }
